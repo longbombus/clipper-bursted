@@ -1,7 +1,9 @@
 {
     "name": "Clipper",
     "rootNamespace": "Clipper2Lib",
-    "references": [],
+    "references": [
+        "Unity.Mathematics"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
