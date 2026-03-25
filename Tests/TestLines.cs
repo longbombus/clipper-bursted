@@ -1,13 +1,11 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using NUnit.Framework;
 
 namespace Clipper2Lib.UnitTests
 {
-
-  [TestClass]
   public class TestLines
   {
-
-    [TestMethod]
+    [Test]
     public void TestOpenPaths()
     {
       for (int i = 0; i <= 16; i++)
@@ -16,7 +14,7 @@ namespace Clipper2Lib.UnitTests
         Paths64 subj = new(), subj_open = new(), clip = new();
         Paths64 solution = new(), solution_open = new();
 
-        Assert.IsTrue(ClipperFileIO.LoadTestNum("..\\..\\..\\..\\..\\..\\Tests\\Lines.txt",
+        Assert.IsTrue(ClipperFileIO.LoadTestNum( "Tests/Lines.txt",
           i, subj, subj_open, clip, out ClipType clipType, out FillRule fillrule,  
           out long area, out int count, out _),
             string.Format("Loading test {0} failed.", i));

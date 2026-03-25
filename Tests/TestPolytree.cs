@@ -1,10 +1,10 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System;
+using System.Linq;
+using NUnit.Framework;
 using Clipper2Lib;
 
 namespace Tests1.Tests
 {
-
-  [TestClass]
   public class TestPolytree
   {
     private static void PolyPathContainsPoint(PolyPath64 pp, Point64 pt, ref int counter)
@@ -56,12 +56,12 @@ namespace Tests1.Tests
       return true;
     }
 
-  [TestMethod]
+  [Test]
     public void TestPolytree2()
     {
       Paths64 subject = new(), subjectOpen = new(), clip = new();
 
-      Assert.IsTrue(ClipperFileIO.LoadTestNum("..\\..\\..\\..\\..\\..\\Tests\\PolytreeHoleOwner2.txt",
+      Assert.IsTrue(ClipperFileIO.LoadTestNum("Tests/PolytreeHoleOwner2.txt",
         1, subject, subjectOpen, clip, out ClipType cliptype, out FillRule fillrule, 
         out _, out _, out _),
           "Unable to read PolytreeHoleOwner2.txt");
@@ -134,7 +134,7 @@ namespace Tests1.Tests
 
     }
 
-  [TestMethod]
+  [Test]
     public void TestPolytree3()
     {
       Paths64 subject = new()

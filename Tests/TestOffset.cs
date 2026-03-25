@@ -1,13 +1,11 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NUnit.Framework;
 
 namespace Clipper2Lib.UnitTests
 {
-
-  [TestClass]
   public class TestOffsets
   {
 
-    [TestMethod]
+    [Test]
     public void TestOffsetEmpty()
     {
       Paths64 solution = new();

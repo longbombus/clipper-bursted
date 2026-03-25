@@ -9,6 +9,7 @@
 using System;
 using System.IO;
 using System.Diagnostics;
+using Clipper2Lib.UnitTests;
 using Debug = UnityEngine.Debug;
 
 #if USINGZ
@@ -91,7 +92,8 @@ namespace Clipper2Lib
       StreamReader reader;
       try
       {
-        reader = new StreamReader(filename);
+        var filepath = TestFileUtility.GetFullPath(filename);
+        reader = new StreamReader(filepath);
       }
       catch (Exception exception)
       {
