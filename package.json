@@ -1,0 +1,12 @@
+{
+  "name": "com.longbombus.clipper-bursted",
+  "version": "0.0.1",
+  "displayName": "Clipper Bursted",
+  "description": "Clipper2 for usage in Unity with burst compiler",
+  "author": {
+    "name": "Denis Lazarev",
+    "email": "mahrizh@gmail.com"
+  },
+  "dependencies": {
+  }
+}
