@@ -2,12 +2,13 @@ using System;
 using System.Linq;
 using NUnit.Framework;
 using Clipper2Lib;
+using Unity.Mathematics;
 
 namespace Tests1.Tests
 {
   public class TestPolytree
   {
-    private static void PolyPathContainsPoint(PolyPath64 pp, Point64 pt, ref int counter)
+    private static void PolyPathContainsPoint(PolyPath64 pp, int2 pt, ref int counter)
     {
       if (Clipper.PointInPolygon(pt, pp.Polygon!) != PointInPolygonResult.IsOutside)
       {
@@ -20,7 +21,7 @@ namespace Tests1.Tests
       } 
     }
 
-    private static bool PolytreeContainsPoint(PolyTree64 pp, Point64 pt)
+    private static bool PolytreeContainsPoint(PolyTree64 pp, int2 pt)
     {
       int counter = 0;
       for (int i = 0; i < pp.Count; i++)
@@ -36,7 +37,7 @@ namespace Tests1.Tests
     {
       foreach (PolyPath64 child in pp.Cast<PolyPath64>())
       {
-        foreach (Point64 pt in child.Polygon!)
+        foreach (int2 pt in child.Polygon!)
           if (Clipper.PointInPolygon(pt, pp.Polygon!) == PointInPolygonResult.IsOutside)
             return false;
         if (child.Count > 0 && !PolyPathFullyContainsChildren(child))
@@ -72,13 +73,13 @@ namespace Tests1.Tests
 
       Path64 pointsOfInterestOutside = new()
       {
-        new Point64(21887, 10420),
-        new Point64(21726, 10825),
-        new Point64(21662, 10845),
-        new Point64(21617, 10890)
+        new int2(21887, 10420),
+        new int2(21726, 10825),
+        new int2(21662, 10845),
+        new int2(21617, 10890)
       };
 
-      foreach (Point64 pt in pointsOfInterestOutside)
+      foreach (int2 pt in pointsOfInterestOutside)
       {
         foreach (Path64 path in subject)
         {
@@ -89,13 +90,13 @@ namespace Tests1.Tests
 
       Path64 pointsOfInterestInside = new()
       {
-        new Point64(21887, 10430),
-        new Point64(21843, 10520),
-        new Point64(21810, 10686),
-        new Point64(21900, 10461)
+        new int2(21887, 10430),
+        new int2(21843, 10520),
+        new int2(21810, 10686),
+        new int2(21900, 10461)
       };
 
-      foreach (Point64 pt in pointsOfInterestInside)
+      foreach (int2 pt in pointsOfInterestInside)
       {
         int poi_inside_counter = 0;
         foreach (Path64 path in subject)
@@ -124,11 +125,11 @@ namespace Tests1.Tests
       Assert.IsTrue(CheckPolytreeFullyContainsChildren(solutionTree),
         "The polytree doesn't properly contain its children");
 
-      foreach (Point64 pt in pointsOfInterestOutside)
+      foreach (int2 pt in pointsOfInterestOutside)
         Assert.IsFalse(PolytreeContainsPoint(solutionTree, pt),
           "The polytree indicates it contains a point that it should not contain");
 
-      foreach (Point64 pt in pointsOfInterestInside)
+      foreach (int2 pt in pointsOfInterestInside)
         Assert.IsTrue(PolytreeContainsPoint(solutionTree, pt),
           "The polytree indicates it does not contain a point that it should contain");
 

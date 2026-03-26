@@ -15,24 +15,17 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Mathematics;
 
-#if USINGZ
-namespace Clipper2ZLib
-#else
 namespace Clipper2Lib
-#endif
 {
-
-  // PRE-COMPILER CONDITIONAL ...
-  // USINGZ: For user defined Z-coordinates. See Clipper.SetZ
-
   public static class Clipper
   {
-    private static Rect64 invalidRect64 = new Rect64(false);
-    public static Rect64 InvalidRect64 => invalidRect64;
+    private static int4 invalidRectI = new int4(false);
+    public static int4 InvalidRectI => invalidRectI;
 
-    private static RectD invalidRectD = new RectD(false);
-    public static RectD InvalidRectD => invalidRectD;
+    private static float4 invalidRectF = new float4(false);
+    public static float4 InvalidRectF => invalidRectF;
 
     public static Paths64 Intersect(Paths64 subject, Paths64 clip, FillRule fillRule)
     {
@@ -141,8 +134,14 @@ namespace Clipper2Lib
       c.Execute(clipType, fillRule, polytree);
     }
 
-    public static Paths64 InflatePaths(Paths64 paths, double delta, JoinType joinType,
-      EndType endType, double miterLimit = 2.0, double arcTolerance = 0.0)
+    public static Paths64 InflatePaths(
+      Paths64 paths,
+      float delta,
+      JoinType joinType,
+      EndType endType,
+      float miterLimit = 2f,
+      float arcTolerance = 0f
+    )
     {
       ClipperOffset co = new ClipperOffset(miterLimit, arcTolerance);
       co.AddPaths(paths, joinType, endType);
@@ -151,11 +150,18 @@ namespace Clipper2Lib
       return solution;
     }
 
-    public static PathsD InflatePaths(PathsD paths, double delta, JoinType joinType,
-      EndType endType, double miterLimit = 2.0, int precision = 2, double arcTolerance = 0.0)
+    public static PathsD InflatePaths(
+      PathsD paths,
+      float delta,
+      JoinType joinType,
+      EndType endType,
+      float miterLimit = 2f,
+      int precision = 2,
+      float arcTolerance = 0f
+    )
     {
       InternalClipper.CheckPrecision(precision);
-      double scale = Math.Pow(10, precision);
+      float scale = math.exp10(precision);
       Paths64 tmp = ScalePaths64(paths, scale);
       ClipperOffset co = new ClipperOffset(miterLimit, scale * arcTolerance);
       co.AddPaths(tmp, joinType, endType);
@@ -163,65 +169,65 @@ namespace Clipper2Lib
       return ScalePathsD(tmp, 1 / scale);
     }
 
-    public static Paths64 RectClip(Rect64 rect, Paths64 paths)
+    public static Paths64 RectClip(int4 rect, Paths64 paths)
     {
       if (rect.IsEmpty() || paths.Count == 0) return new Paths64();
       RectClip64 rc = new RectClip64(rect);
       return rc.Execute(paths);
     }
 
-    public static Paths64 RectClip(Rect64 rect, Path64 path)
+    public static Paths64 RectClip(int4 rect, Path64 path)
     {
       if (rect.IsEmpty() || path.Count == 0) return new Paths64();
       Paths64 tmp = new Paths64 { path };
       return RectClip(rect, tmp);
     }
     
-    public static PathsD RectClip(RectD rect, PathsD paths, int precision = 2)
+    public static PathsD RectClip(float4 rect, PathsD paths, int precision = 2)
     {
       InternalClipper.CheckPrecision(precision);
       if (rect.IsEmpty() || paths.Count == 0) return new PathsD();
-      double scale = Math.Pow(10, precision);
-      Rect64 r = ScaleRect(rect, scale);
+      float scale = math.exp10(precision);
+      int4 r = ScaleRect(rect, scale);
       Paths64 tmpPath = ScalePaths64(paths, scale);
       RectClip64 rc = new RectClip64(r);
       tmpPath = rc.Execute(tmpPath);
       return ScalePathsD(tmpPath, 1 / scale);
     }
 
-    public static PathsD RectClip(RectD rect, PathD path, int precision = 2)
+    public static PathsD RectClip(float4 rect, PathD path, int precision = 2)
     {
       if (rect.IsEmpty() || path.Count == 0) return new PathsD();
       PathsD tmp = new PathsD { path };
       return RectClip(rect, tmp, precision);
     }
-    public static Paths64 RectClipLines(Rect64 rect, Paths64 paths)
+    public static Paths64 RectClipLines(int4 rect, Paths64 paths)
     {
       if (rect.IsEmpty() || paths.Count == 0) return new Paths64();
       RectClipLines64 rc = new RectClipLines64(rect);
       return rc.Execute(paths);
     }
 
-    public static Paths64 RectClipLines(Rect64 rect, Path64 path)
+    public static Paths64 RectClipLines(int4 rect, Path64 path)
     {
       if (rect.IsEmpty() || path.Count == 0) return new Paths64();
       Paths64 tmp = new Paths64 { path };
       return RectClipLines(rect, tmp);
     }
 
-    public static PathsD RectClipLines(RectD rect, 
+    public static PathsD RectClipLines(float4 rect, 
       PathsD paths, int precision = 2)
     {
       InternalClipper.CheckPrecision(precision);
       if (rect.IsEmpty() || paths.Count == 0) return new PathsD();
-      double scale = Math.Pow(10, precision);
-      Rect64 r = ScaleRect(rect, scale);
+      float scale = math.exp10(precision);
+      int4 r = ScaleRect(rect, scale);
       Paths64 tmpPath = ScalePaths64(paths, scale);
       RectClipLines64 rc = new RectClipLines64(r);
       tmpPath = rc.Execute(tmpPath);
       return ScalePathsD(tmpPath, 1 / scale);
     }
-    public static PathsD RectClipLines(RectD rect, PathD path, int precision = 2)
+    public static PathsD RectClipLines(float4 rect, PathD path, int precision = 2)
     {
       if (rect.IsEmpty() || path.Count == 0) return new PathsD();
       PathsD tmp = new PathsD { path };
@@ -247,19 +253,20 @@ namespace Clipper2Lib
       return Minkowski.Diff(pattern, path, isClosed);
     }
 
-    public static double Area(Path64 path)
+    public static float Area(Path64 path)
     {
       // https://en.wikipedia.org/wiki/Shoelace_formula
-      double a = 0.0;
-      int cnt = path.Count;
-      if (cnt < 3) return 0.0;
-      Point64 prevPt = path[cnt - 1];
-      foreach (Point64 pt in path)
+      float a = 0f;
+      if (path.Count < 3)
+        return 0f;
+
+      int2 prevPt = path[^1];
+      foreach (int2 pt in path)
       {
-        a += (double) (prevPt.Y + pt.Y) * (prevPt.X - pt.X);
+        a += (prevPt.y + pt.y) * (prevPt.x - pt.x);
         prevPt = pt;
       }
-      return a * 0.5;
+      return a * 0.5f;
     }
 
     public static double Area(Paths64 paths)
@@ -275,8 +282,8 @@ namespace Clipper2Lib
       double a = 0.0;
       int cnt = path.Count;
       if (cnt < 3) return 0.0;
-      PointD prevPt = path[cnt - 1];
-      foreach (PointD pt in path)
+      float2 prevPt = path[cnt - 1];
+      foreach (float2 pt in path)
       {
         a += (prevPt.y + pt.y) * (prevPt.x - pt.x);
         prevPt = pt;
@@ -307,7 +314,7 @@ namespace Clipper2Lib
     public static string Path64ToString(Path64 path)
     {
       string result = "";
-      foreach (Point64 pt in path)
+      foreach (int2 pt in path)
         result += pt.ToString();
       return result + '\n';
     }
@@ -321,7 +328,7 @@ namespace Clipper2Lib
     public static string PathDToString(PathD path)
     {
       string result = "";
-      foreach (PointD pt in path)
+      foreach (float2 pt in path)
         result += pt.ToString();
       return result + '\n';
     }
@@ -332,91 +339,56 @@ namespace Clipper2Lib
         result += PathDToString(path);
       return result;
     }
-    public static Path64 OffsetPath(Path64 path, long dx, long dy)
+    public static Path64 OffsetPath(Path64 path, int dx, int dy)
     {
       Path64 result = new Path64(path.Count);
-      foreach (Point64 pt in path)
-        result.Add(new Point64(pt.X + dx, pt.Y + dy));
+      foreach (int2 pt in path)
+        result.Add(new int2(pt.x + dx, pt.y + dy));
       return result;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Point64 ScalePoint64(Point64 pt, double scale)
-    {
-      Point64 result = new Point64()
-      {
-        X = (long) Math.Round(pt.X * scale, MidpointRounding.AwayFromZero),
-        Y = (long) Math.Round(pt.Y * scale, MidpointRounding.AwayFromZero),
-#if USINGZ
-        Z = pt.Z
-#endif
-      };
-      return result;
-    }
+    public static int2 Scaleint2(int2 pt, float scale)
+      => (int2) math.round((float2)pt * scale);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static PointD ScalePointD(Point64 pt, double scale)
-    {
-      PointD result = new PointD()
-      {
-        x = pt.X * scale,
-        y = pt.Y * scale,
-#if USINGZ
-        z = pt.Z,
-#endif
-      };
-      return result;
-    }
-
+    public static float2 Scalefloat2(int2 pt, float scale)
+      => (float2)pt * scale;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Rect64 ScaleRect(RectD rec, double scale)
-    {
-      Rect64 result = new Rect64()
-      {
-        left = (long) (rec.left * scale),
-        top = (long) (rec.top * scale),
-        right = (long) (rec.right * scale),
-        bottom = (long) (rec.bottom * scale)
-      };
-      return result;
-    }
+    public static int4 ScaleRect(float4 rec, float scale)
+      => (int4)(rec * scale);
 
-    public static Path64 ScalePath(Path64 path, double scale)
+    public static Path64 ScalePath(Path64 path, float scale)
     {
-      if (InternalClipper.IsAlmostZero(scale - 1)) return path;
+      if ((scale - 1).IsAlmostZero()) return path;
       Path64 result = new Path64(path.Count);
-#if USINGZ
-      foreach (Point64 pt in path)
-        result.Add(new Point64(pt.X * scale, pt.Y * scale, pt.Z));
-#else
-      foreach (Point64 pt in path)
-        result.Add(new Point64(pt.X * scale, pt.Y * scale));
-#endif
+      foreach (int2 pt in path)
+        result.Add((int2)((float2)pt * scale));
       return result;
     }
 
-    public static Paths64 ScalePaths(Paths64 paths, double scale)
+    public static Paths64 ScalePaths(Paths64 paths, float scale)
     {
-      if (InternalClipper.IsAlmostZero(scale - 1)) return paths;
+      if ((scale - 1).IsAlmostZero()) return paths;
       Paths64 result = new Paths64(paths.Count);
       foreach (Path64 path in paths)
         result.Add(ScalePath(path, scale));
       return result;
     }
 
-    public static PathD ScalePath(PathD path, double scale)
+    public static PathD ScalePath(PathD path, float scale)
     {
-      if (InternalClipper.IsAlmostZero(scale - 1)) return path;
+      if ((scale - 1).IsAlmostZero()) return path;
       PathD result = new PathD(path.Count);
-      foreach (PointD pt in path)
-        result.Add(new PointD(pt, scale));
+      foreach (float2 pt in path)
+        result.Add(pt * scale);
       return result;
     }
 
-    public static PathsD ScalePaths(PathsD paths, double scale)
+    public static PathsD ScalePaths(PathsD paths, float scale)
     {
-      if (InternalClipper.IsAlmostZero(scale - 1)) return paths;
+      if ((scale - 1).IsAlmostZero()) return paths;
       PathsD result = new PathsD(paths.Count);
       foreach (PathD path in paths)
         result.Add(ScalePath(path, scale));
@@ -424,16 +396,16 @@ namespace Clipper2Lib
     }
 
     // Unlike ScalePath, both ScalePath64 & ScalePathD also involve type conversion
-    public static Path64 ScalePath64(PathD path, double scale)
+    public static Path64 ScalePath64(PathD path, float scale)
     {
       int cnt = path.Count;
       Path64 res = new Path64(cnt);
-      foreach (PointD pt in path)
-        res.Add(new Point64(pt, scale));
+      foreach (float2 pt in path)
+        res.Add((int2)(pt * scale));
       return res;
     }
 
-    public static Paths64 ScalePaths64(PathsD paths, double scale)
+    public static Paths64 ScalePaths64(PathsD paths, float scale)
     {
       int cnt = paths.Count;
       Paths64 res = new Paths64(cnt);
@@ -442,16 +414,16 @@ namespace Clipper2Lib
       return res;
     }
 
-    public static PathD ScalePathD(Path64 path, double scale)
+    public static PathD ScalePathD(Path64 path, float scale)
     {
       int cnt = path.Count;
       PathD res = new PathD(cnt);
-      foreach (Point64 pt in path)
-        res.Add(new PointD(pt, scale));
+      foreach (int2 pt in path)
+        res.Add((float2)pt * scale);
       return res;
     }
 
-    public static PathsD ScalePathsD(Paths64 paths, double scale)
+    public static PathsD ScalePathsD(Paths64 paths, float scale)
     {
       int cnt = paths.Count;
       PathsD res = new PathsD(cnt);
@@ -464,8 +436,8 @@ namespace Clipper2Lib
     public static Path64 Path64(PathD path)
     {
       Path64 result = new Path64(path.Count);
-      foreach (PointD pt in path)
-        result.Add(new Point64(pt));
+      foreach (float2 pt in path)
+        result.Add(new int2(pt));
       return result;
     }
 
@@ -488,20 +460,20 @@ namespace Clipper2Lib
     public static PathD PathD(Path64 path)
     {
       PathD result = new PathD(path.Count);
-      foreach (Point64 pt in path)
-        result.Add(new PointD(pt));
+      foreach (int2 pt in path)
+        result.Add(new float2(pt));
       return result;
     }
 
-    public static Path64 TranslatePath(Path64 path, long dx, long dy)
+    public static Path64 TranslatePath(Path64 path, int dx, int dy)
     {
       Path64 result = new Path64(path.Count);
-      foreach (Point64 pt in path)
-        result.Add(new Point64(pt.X + dx, pt.Y + dy));
+      foreach (int2 pt in path)
+        result.Add(new int2(pt.x + dx, pt.y + dy));
       return result;
     }
 
-    public static Paths64 TranslatePaths(Paths64 paths, long dx, long dy)
+    public static Paths64 TranslatePaths(Paths64 paths, int dx, int dy)
     {
       Paths64 result = new Paths64(paths.Count);
       foreach (Path64 path in paths)
@@ -509,15 +481,15 @@ namespace Clipper2Lib
       return result;
     }
 
-    public static PathD TranslatePath(PathD path, double dx, double dy)
+    public static PathD TranslatePath(PathD path, float dx, float dy)
     {
       PathD result = new PathD(path.Count);
-      foreach (PointD pt in path)
-        result.Add(new PointD(pt.x + dx, pt.y + dy));
+      foreach (float2 pt in path)
+        result.Add(new float2(pt.x + dx, pt.y + dy));
       return result;
     }
 
-    public static PathsD TranslatePaths(PathsD paths, double dx, double dy)
+    public static PathsD TranslatePaths(PathsD paths, float dx, float dy)
     {
       PathsD result = new PathsD(paths.Count);
       foreach (PathD path in paths)
@@ -556,58 +528,58 @@ namespace Clipper2Lib
       return result;
     }
 
-    public static Rect64 GetBounds(Path64 path)
+    public static int4 GetBounds(Path64 path)
     {
-      Rect64 result = InvalidRect64;
-      foreach (Point64 pt in path)
+      int4 result = InvalidRectI;
+      foreach (int2 pt in path)
       {
-        if (pt.X < result.left) result.left = pt.X;
-        if (pt.X > result.right) result.right = pt.X;
-        if (pt.Y < result.top) result.top = pt.Y;
-        if (pt.Y > result.bottom) result.bottom = pt.Y;
+        if (pt.x < result.x) result.x = pt.x;
+        if (pt.x > result.z) result.z = pt.x;
+        if (pt.y < result.z) result.z = pt.y;
+        if (pt.y > result.w) result.w = pt.y;
       }
-      return result.left == long.MaxValue ? new Rect64() : result;
+      return result.x == long.MaxValue ? new int4() : result;
     }
 
-    public static Rect64 GetBounds(Paths64 paths)
+    public static int4 GetBounds(Paths64 paths)
     {
-      Rect64 result = InvalidRect64;
+      int4 result = InvalidRectI;
       foreach (Path64 path in paths)
-        foreach (Point64 pt in path)
+        foreach (int2 pt in path)
         {
-          if (pt.X < result.left) result.left = pt.X;
-          if (pt.X > result.right) result.right = pt.X;
-          if (pt.Y < result.top) result.top = pt.Y;
-          if (pt.Y > result.bottom) result.bottom = pt.Y;
+          if (pt.x < result.x) result.x = pt.x;
+          if (pt.x > result.z) result.z = pt.x;
+          if (pt.y < result.z) result.z = pt.y;
+          if (pt.y > result.w) result.w = pt.y;
         }
-      return result.left == long.MaxValue ? new Rect64() : result;
+      return result.x == long.MaxValue ? new int4() : result;
     }
 
-    public static RectD GetBounds(PathD path)
+    public static float4 GetBounds(PathD path)
     {
-      RectD result = InvalidRectD;
-      foreach (PointD pt in path)
+      float4 result = InvalidRectF;
+      foreach (float2 pt in path)
       {
-        if (pt.x < result.left) result.left = pt.x;
-        if (pt.x > result.right) result.right = pt.x;
-        if (pt.y < result.top) result.top = pt.y;
-        if (pt.y > result.bottom) result.bottom = pt.y;
+        if (pt.x < result.x) result.x = pt.x;
+        if (pt.x > result.z) result.z = pt.x;
+        if (pt.y < result.y) result.y = pt.y;
+        if (pt.y > result.w) result.w = pt.y;
       }
-      return Math.Abs(result.left - double.MaxValue) < InternalClipper.floatingPointTolerance ? new RectD() : result;
+      return Math.Abs(result.x - double.MaxValue) < InternalClipper.floatingPointTolerance ? new float4() : result;
     }
 
-    public static RectD GetBounds(PathsD paths)
+    public static float4 GetBounds(PathsD paths)
     {
-      RectD result = InvalidRectD;
+      float4 result = InvalidRectF;
       foreach (PathD path in paths)
-        foreach (PointD pt in path)
+        foreach (float2 pt in path)
         {
-          if (pt.x < result.left) result.left = pt.x;
-          if (pt.x > result.right) result.right = pt.x;
-          if (pt.y < result.top) result.top = pt.y;
-          if (pt.y > result.bottom) result.bottom = pt.y;
+          if (pt.x < result.x) result.x = pt.x;
+          if (pt.x > result.z) result.z = pt.x;
+          if (pt.y < result.y) result.y = pt.y;
+          if (pt.y > result.w) result.w = pt.y;
         }
-      return Math.Abs(result.left - double.MaxValue) < InternalClipper.floatingPointTolerance ? new RectD() : result;
+      return Math.Abs(result.x - double.MaxValue) < InternalClipper.floatingPointTolerance ? new float4() : result;
     }
 
     public static Path64 MakePath(int[] arr)
@@ -615,98 +587,28 @@ namespace Clipper2Lib
       int len = arr.Length / 2;
       Path64 p = new Path64(len);
       for (int i = 0; i < len; i++)
-        p.Add(new Point64(arr[i * 2], arr[i * 2 + 1]));
+        p.Add(new int2(arr[i * 2], arr[i * 2 + 1]));
       return p;
     }
 
-    public static Path64 MakePath(long[] arr)
-    {
-      int len = arr.Length / 2;
-      Path64 p = new Path64(len);
-      for (int i = 0; i < len; i++)
-        p.Add(new Point64(arr[i * 2], arr[i * 2 + 1]));
-      return p;
-    }
-
-    public static PathD MakePath(double[] arr)
+    public static PathD MakePath(float[] arr)
     {
       int len = arr.Length / 2;
       PathD p = new PathD(len);
       for (int i = 0; i < len; i++)
-        p.Add(new PointD(arr[i * 2], arr[i * 2 + 1]));
+        p.Add(new float2(arr[i * 2], arr[i * 2 + 1]));
       return p;
     }
-
-#if USINGZ
-    public static Path64 MakePathZ(long[] arr)
-    {
-      int len = arr.Length / 3;
-      Path64 p = new Path64(len);
-      for (int i = 0; i < len; i++)
-        p.Add(new Point64(arr[i * 3], arr[i * 3 + 1], arr[i * 3 + 2]));
-      return p;
-    }
-    public static PathD MakePathZ(double[] arr)
-    {
-      int len = arr.Length / 3;
-      PathD p = new PathD(len);
-      for (int i = 0; i < len; i++)
-        p.Add(new PointD(arr[i * 3], arr[i * 3 + 1], (long)arr[i * 3 + 2]));
-      return p;
-    }
-#endif
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static double Sqr(double val)
+    public static float Sqr(float val)
     {
       return val * val;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static double Sqr(long val)
-    {
-      return (double) val * (double) val;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static double DistanceSqr(Point64 pt1, Point64 pt2)
-    {
-      return Sqr(pt1.X - pt2.X) + Sqr(pt1.Y - pt2.Y);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static Point64 MidPoint(Point64 pt1, Point64 pt2)
-    {
-      return new Point64((pt1.X + pt2.X) / 2, (pt1.Y + pt2.Y) / 2);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static PointD MidPoint(PointD pt1, PointD pt2)
-    {
-      return new PointD((pt1.x + pt2.x) / 2, (pt1.y + pt2.y) / 2);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void InflateRect(ref Rect64 rec, int dx, int dy)
-    {
-      rec.left -= dx;
-      rec.right += dx;
-      rec.top -= dy;
-      rec.bottom += dy;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void InflateRect(ref RectD rec, double dx, double dy)
-    {
-      rec.left -= dx;
-      rec.right += dx;
-      rec.top -= dy;
-      rec.bottom += dy;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool PointsNearEqual(PointD pt1, PointD pt2, double distanceSqrd)
+    public static bool PointsNearEqual(float2 pt1, float2 pt2, double distanceSqrd)
     {
       return Sqr(pt1.x - pt2.x) + Sqr(pt1.y - pt2.y) < distanceSqrd;
     }
@@ -717,7 +619,7 @@ namespace Clipper2Lib
       int cnt = path.Count;
       PathD result = new PathD(cnt);
       if (cnt == 0) return result;
-      PointD lastPt = path[0];
+      float2 lastPt = path[0];
       result.Add(lastPt);
       for (int i = 1; i < cnt; i++)
         if (!PointsNearEqual(lastPt, path[i], minEdgeLenSqrd))
@@ -739,15 +641,15 @@ namespace Clipper2Lib
       int cnt = path.Count;
       Path64 result = new Path64(cnt);
       if (cnt == 0) return result;
-      Point64 lastPt = path[0];
+      int2 lastPt = path[0];
       result.Add(lastPt);
       for (int i = 1; i < cnt; i++)
-        if (lastPt != path[i])
+        if (!lastPt.Equals(path[i]))
         {
           lastPt = path[i];
           result.Add(lastPt);
         }
-      if (isClosedPath && lastPt == result[0])
+      if (isClosedPath && lastPt.Equals(result[0]))
         result.RemoveAt(result.Count - 1);
       return result;
     }
@@ -794,23 +696,23 @@ namespace Clipper2Lib
 
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static double PerpendicDistFromLineSqrd(PointD pt, PointD line1, PointD line2)
+    public static float PerpendicDistFromLineSqrd(float2 pt, float2 line1, float2 line2)
     {
-      double a = pt.x - line1.x;
-      double b = pt.y - line1.y;
-      double c = line2.x - line1.x;
-      double d = line2.y - line1.y;
+      float a = pt.x - line1.x;
+      float b = pt.y - line1.y;
+      float c = line2.x - line1.x;
+      float d = line2.y - line1.y;
       if (c == 0 && d == 0) return 0;
       return Sqr(a * d - c * b) / (c * c + d * d);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static double PerpendicDistFromLineSqrd(Point64 pt, Point64 line1, Point64 line2)
+    public static float PerpendicDistFromLineSqrd(int2 pt, int2 line1, int2 line2)
     {
-      double a = (double) pt.X - line1.X;
-      double b = (double) pt.Y - line1.Y;
-      double c = (double) line2.X - line1.X;
-      double d = (double) line2.Y - line1.Y;
+      float a = pt.x - line1.x;
+      float b = pt.y - line1.y;
+      float c = line2.x - line1.x;
+      float d = line2.y - line1.y;
       if (c == 0 && d == 0) return 0;
       return Sqr(a * d - c * b) / (c * c + d * d);
     }
@@ -821,7 +723,7 @@ namespace Clipper2Lib
       {
         int idx = 0;
         double max_d = 0;
-        while (end > begin && path[begin] == path[end]) flags[end--] = false;
+        while (end > begin && path[begin].Equals(path[end])) flags[end--] = false;
         for (int i = begin + 1; i < end; ++i)
         {
           // PerpendicDistFromLineSqrd - avoids expensive Sqrt()
@@ -844,7 +746,7 @@ namespace Clipper2Lib
       }
     }
 
-    public static Path64 RamerDouglasPeucker(Path64 path, double epsilon)
+    public static Path64 RamerDouglasPeucker(Path64 path, float epsilon)
     {
       int len = path.Count;
       if (len < 5) return path;
@@ -856,7 +758,7 @@ namespace Clipper2Lib
       return result;
     }
 
-    public static Paths64 RamerDouglasPeucker(Paths64 paths, double epsilon)
+    public static Paths64 RamerDouglasPeucker(Paths64 paths, float epsilon)
     {
       Paths64 result = new Paths64(paths.Count);
       foreach (Path64 path in paths)
@@ -864,17 +766,17 @@ namespace Clipper2Lib
       return result;
     }
 
-    internal static void RDP(PathD path, int begin, int end, double epsSqrd, List<bool> flags)
+    internal static void RDP(PathD path, int begin, int end, float epsSqrd, List<bool> flags)
     {
       while (true)
       {
         int idx = 0;
-        double max_d = 0;
-        while (end > begin && path[begin] == path[end]) flags[end--] = false;
+        float max_d = 0;
+        while (end > begin && path[begin].Equals(path[end])) flags[end--] = false;
         for (int i = begin + 1; i < end; ++i)
         {
           // PerpendicDistFromLineSqrd - avoids expensive Sqrt()
-          double d = PerpendicDistFromLineSqrd(path[i], path[begin], path[end]);
+          float d = PerpendicDistFromLineSqrd(path[i], path[begin], path[end]);
           if (d <= max_d) continue;
           max_d = d;
           idx = i;
@@ -893,7 +795,7 @@ namespace Clipper2Lib
       }
     }
 
-    public static PathD RamerDouglasPeucker(PathD path, double epsilon)
+    public static PathD RamerDouglasPeucker(PathD path, float epsilon)
     {
       int len = path.Count;
       if (len < 5) return path;
@@ -905,7 +807,7 @@ namespace Clipper2Lib
       return result;
     }
 
-    public static PathsD RamerDouglasPeucker(PathsD paths, double epsilon)
+    public static PathsD RamerDouglasPeucker(PathsD paths, float epsilon)
     {
       PathsD result = new PathsD(paths.Count);
       foreach (PathD path in paths)
@@ -936,8 +838,11 @@ namespace Clipper2Lib
       return current;
     }
 
-      public static Path64 SimplifyPath(Path64 path,
-      double epsilon, bool isClosedPath = true)
+      public static Path64 SimplifyPath(
+        Path64 path,
+        float epsilon,
+        bool isClosedPath = true
+      )
     {
       int len = path.Count, high = len - 1;
       double epsSqr = Sqr(epsilon);
@@ -1002,8 +907,11 @@ namespace Clipper2Lib
       return result;
     }
 
-    public static Paths64 SimplifyPaths(Paths64 paths,
-      double epsilon, bool isClosedPaths = true)
+    public static Paths64 SimplifyPaths(
+      Paths64 paths,
+      float epsilon,
+      bool isClosedPaths = true
+    )
     {
       Paths64 result = new Paths64(paths.Count);
       foreach (Path64 path in paths)
@@ -1011,11 +919,14 @@ namespace Clipper2Lib
       return result;
     }
 
-    public static PathD SimplifyPath(PathD path,
-      double epsilon, bool isClosedPath = true)
+    public static PathD SimplifyPath(
+      PathD path,
+      float epsilon,
+      bool isClosedPath = true
+    )
     {
       int len = path.Count, high = len - 1;
-      double epsSqr = Sqr(epsilon);
+      float epsSqr = Sqr(epsilon);
       if (len < 4) return path;
 
       bool[] flags = new bool[len];
@@ -1075,8 +986,11 @@ namespace Clipper2Lib
       return result;
     }
 
-    public static PathsD SimplifyPaths(PathsD paths,
-      double epsilon, bool isClosedPath = true)
+    public static PathsD SimplifyPaths(
+      PathsD paths,
+      float epsilon,
+      bool isClosedPath = true
+    )
     {
       PathsD result = new PathsD(paths.Count);
       foreach (PathD path in paths)
@@ -1097,13 +1011,13 @@ namespace Clipper2Lib
 
       if (len - i < 3)
       {
-        if (!isOpen || len < 2 || path[0] == path[1])
+        if (!isOpen || len < 2 || path[0].Equals(path[1]))
           return new Path64();
         return path;
       }
 
       Path64 result = new Path64(len - i);
-      Point64 last = path[i];
+      int2 last = path[i];
       result.Add(last);
       for (i++; i < len - 1; i++)
       {
@@ -1132,67 +1046,77 @@ namespace Clipper2Lib
     public static PathD TrimCollinear(PathD path, int precision, bool isOpen = false)
     {
       InternalClipper.CheckPrecision(precision);
-      double scale = Math.Pow(10, precision);
+      float scale = math.exp10(precision);
       Path64 p = ScalePath64(path, scale);
       p = TrimCollinear(p, isOpen);
       return ScalePathD(p, 1 / scale);
     }
 
-    public static PointInPolygonResult PointInPolygon(Point64 pt, Path64 polygon)
+    public static PointInPolygonResult PointInPolygon(int2 pt, Path64 polygon)
     {
       return InternalClipper.PointInPolygon(pt, polygon);
     }
 
-    public static PointInPolygonResult PointInPolygon(PointD pt, 
+    public static PointInPolygonResult PointInPolygon(float2 pt, 
       PathD polygon, int precision = 2)
     {
       InternalClipper.CheckPrecision(precision);
-      double scale = Math.Pow(10, precision);
-      Point64 p = new Point64(pt, scale);
+      float scale = math.exp10(precision);
+      int2 p = (int2)(pt * scale);
       Path64 path = ScalePath64(polygon, scale);
       return InternalClipper.PointInPolygon(p, path);
     }
 
-    public static Path64 Ellipse(Point64 center,
-      double radiusX, double radiusY = 0, int steps = 0)
+    public static Path64 Ellipse(
+      int2 center,
+      float radiusX,
+      float radiusY = 0,
+      int steps = 0
+    )
     {
       if (radiusX <= 0) return new Path64();
       if (radiusY <= 0) radiusY = radiusX;
       if (steps <= 2)
-        steps = (int) Math.Ceiling(Math.PI * Math.Sqrt((radiusX + radiusY) / 2));
+        steps = (int) math.ceil(math.PI * math.sqrt((radiusX + radiusY) / 2));
 
-      double si = Math.Sin(2 * Math.PI / steps);
-      double co = Math.Cos(2 * Math.PI / steps);
-      double dx = co, dy = si;
-      Path64 result = new Path64(steps) { new Point64(center.X + radiusX, center.Y) };
+      float2 radius = new float2(radiusX, radiusY);
+
+      math.sincos(math.TAU / steps, out float si, out float co);
+      float2 d = new float2(co, si);
+      Path64 result = new Path64(steps) { new int2((int)(center.x + radiusX), center.y) };
       for (int i = 1; i < steps; ++i)
       {
-        result.Add(new Point64(center.X + radiusX * dx, center.Y + radiusY * dy));
-        double x = dx * co - dy * si;
-        dy = dy * co + dx * si;
-        dx = x;
+        result.Add((int2)math.round(center + radius * d));
+        float x = d.x * co - d.y * si;
+        d.y = d.y * co + d.x * si;
+        d.x = x;
       }
       return result;
     }
 
-    public static PathD Ellipse(PointD center,
-      double radiusX, double radiusY = 0, int steps = 0)
+    public static PathD Ellipse(
+      float2 center,
+      float radiusX,
+      float radiusY = 0,
+      int steps = 0
+    )
     {
       if (radiusX <= 0) return new PathD();
       if (radiusY <= 0) radiusY = radiusX;
       if (steps <= 2)
-        steps = (int) Math.Ceiling(Math.PI * Math.Sqrt((radiusX + radiusY) / 2));
+        steps = (int) math.ceil(math.PI * math.sqrt((radiusX + radiusY) / 2));
 
-      double si = Math.Sin(2 * Math.PI / steps);
-      double co = Math.Cos(2 * Math.PI / steps);
-      double dx = co, dy = si;
-      PathD result = new PathD(steps) { new PointD(center.x + radiusX, center.y) };
+      float2 radius = new float2(radiusX, radiusY);
+
+      math.sincos(math.TAU / steps, out float si, out float co);
+      float2 d = new float2(co, si);
+      PathD result = new PathD(steps) { new float2(center.x + radiusX, center.y) };
       for (int i = 1; i < steps; ++i)
       {
-        result.Add(new PointD(center.x + radiusX * dx, center.y + radiusY * dy));
-        double x = dx * co - dy * si;
-        dy = dy * co + dx * si;
-        dx = x;
+        result.Add(center + radius * d);
+        float x = d.x * co - d.y * si;
+        d.y = d.y * co + d.x * si;
+        d.x = x;
       }
       return result;
     }
@@ -1247,17 +1171,14 @@ namespace Clipper2Lib
 
     public static TriangulateResult Triangulate(PathsD pp, int decPlaces, out PathsD solution, bool useDelaunay = true)
     {
-      double scale;
-      if (decPlaces <= 0) scale = 1.0;
-      else if (decPlaces > 8) scale = Math.Pow(10.0, 8.0);
-      else scale = Math.Pow(10.0, decPlaces);
+      float scale = decPlaces <= 0 ? 1f : math.exp10(math.min(decPlaces, 8));
 
-      Paths64 pp64 = Clipper.ScalePaths64(pp, scale);
+      Paths64 pp64 = ScalePaths64(pp, scale);
 
       Delaunay d = new Delaunay(useDelaunay);
       TriangulateResult result = d.Execute(pp64, out Paths64 sol64);
       if (result == TriangulateResult.success)
-        solution = Clipper.ScalePathsD(sol64, 1.0 / scale);
+        solution = ScalePathsD(sol64, 1f / scale);
       else
         solution = new PathsD();
       return result;

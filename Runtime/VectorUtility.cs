@@ -1,30 +1,25 @@
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 
-#if USINGZ
-namespace Clipper2ZLib
-#else
 namespace Clipper2Lib
-#endif
 {
-	#region Aliases
-#if USINGZ
-  using Point64 = int3;
-  using PointD = float3;
-#else
-	using Point64 = int2;
-	using PointD = float2;
-#endif
-
-	using Rect64 = int4;
-	using RectD = float4;
-	#endregion
-
 	public static class VectorUtility
 	{
 		public const int MaxFloatInt = Huge * Huge;
 		public const int Huge = 4096;
 		public const float Tiny = 1f / Huge;
+
+		#region Scalar
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsAlmostZero(this float value)
+			=> math.abs(value) < Tiny;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float Sqr(this float value)
+			=> value * value;
+
+		#endregion
 
 		#region Point
 
@@ -40,8 +35,8 @@ namespace Clipper2Lib
 
 		#region Rect
 
-		public static readonly int4 InvalidRect64 = new(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
-		public static readonly float4 InvalidRectD = new(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
+		public static readonly int4 Invalidint4 = new(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
+		public static readonly float4 Invalidfloat4 = new(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static int GetLeft(this in int4 rect)

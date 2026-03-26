@@ -13,12 +13,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Mathematics;
 
-#if USINGZ
-namespace Clipper2ZLib
-#else
 namespace Clipper2Lib
-#endif
 {
   /// <summary>
   /// A pool of reusable Vertex objects
@@ -26,7 +23,7 @@ namespace Clipper2Lib
   internal class VertexPoolList : PooledList<Vertex>
   {
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public Vertex Add(Point64 point, VertexFlags flags, Vertex? prev)
+    public Vertex Add(int2 point, VertexFlags flags, Vertex? prev)
     {
       TryGrow();
       Vertex poolVtx = _items[_size];
@@ -56,7 +53,7 @@ namespace Clipper2Lib
     public static bool UseOutPtPool = true;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public OutPt Add(Point64 pt, OutRec outrec)
+    public OutPt Add(int2 pt, OutRec outrec)
     {
       TryGrow();
       OutPt poolPt = _items[_size];
@@ -104,7 +101,7 @@ namespace Clipper2Lib
         outRec.frontEdge = null;
         outRec.backEdge = null;
         outRec.pts = null;
-        outRec.bounds = new Rect64();
+        outRec.bounds = new int4();
         outRec.path = new Path64();
         outRec.polypath = null;
         outRec.isOpen = false;

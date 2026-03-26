@@ -10,13 +10,10 @@ using System;
 using System.IO;
 using System.Diagnostics;
 using Clipper2Lib.UnitTests;
+using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
 
-#if USINGZ
-namespace Clipper2ZLib
-#else
 namespace Clipper2Lib
-#endif
 {
 
   public static class ClipperFileIO
@@ -37,7 +34,7 @@ namespace Clipper2Lib
         if (i >= len || s[i] < 48 || s[i] > 57) break;
         int j = i + 1;
         while (j < len && s[j] > 47 && s[j] < 58) j++;
-        if (!long.TryParse(s.Substring(i, j - i), out long x)) break;
+        if (!int.TryParse(s.Substring(i, j - i), out int x)) break;
         if (isNeg) x = -x;
         //skip space or comma between X & Y ...
         i = j;
@@ -49,9 +46,9 @@ namespace Clipper2Lib
         if (i >= len || s[i] < 48 || s[i] > 57) break;
         j = i + 1;
         while (j < len && s[j] > 47 && s[j] < 58) j++;
-        if (!long.TryParse(s.Substring(i,j-i), out long y)) break;
+        if (!int.TryParse(s.Substring(i,j-i), out int y)) break;
         if (isNeg) y = -y;
-        p.Add(new Point64(x, y));
+        p.Add(new int2(x, y));
         //skip trailing space, comma ...
         i = j;
         int nlCnt = 0;
@@ -205,8 +202,8 @@ namespace Clipper2Lib
         writer.Write("SUBJECTS\r\n");
         foreach (Path64 p in subj)
         {
-          foreach (Point64 ip in p)
-            writer.Write("{0},{1} ", ip.X, ip.Y);
+          foreach (int2 ip in p)
+            writer.Write("{0},{1} ", ip.x, ip.y);
           writer.Write("\r\n");
         }
       }
@@ -215,8 +212,8 @@ namespace Clipper2Lib
         writer.Write("SUBJECTS_OPEN\r\n");
         foreach (Path64 p in subj_open)
         {
-          foreach (Point64 ip in p)
-            writer.Write("{0},{1} ", ip.X, ip.Y);
+          foreach (int2 ip in p)
+            writer.Write("{0},{1} ", ip.x, ip.y);
           writer.Write("\r\n");
         }
       }
@@ -225,7 +222,7 @@ namespace Clipper2Lib
         writer.Write("CLIPS\r\n");
         foreach (Path64 p in clip)
         {
-          foreach (Point64 ip in p)
+          foreach (int2 ip in p)
             writer.Write(ip.ToString());
           writer.Write("\r\n");
         }
@@ -257,24 +254,24 @@ namespace Clipper2Lib
       foreach (Path64 path in paths)
       {
         writer.Write(path.Count);
-        foreach (Point64 pt in path)
+        foreach (int2 pt in path)
         {
-          writer.Write(pt.X);
-          writer.Write(pt.Y);
+          writer.Write(pt.x);
+          writer.Write(pt.y);
         }
       }
       writer.Close();
     }
     //------------------------------------------------------------------------------
 
-    public static Paths64 AffineTranslatePaths(Paths64 paths, long dx, long dy)
+    public static Paths64 AffineTranslatePaths(Paths64 paths, int dx, int dy)
     {
       Paths64 result = new Paths64(paths.Count);
       foreach (Path64 path in paths)
       {
         Path64 p = new Path64(path.Count);
-        foreach (Point64 pt in path)
-          p.Add(new Point64(pt.X + dx, pt.Y + dy));
+        foreach (int2 pt in path)
+          p.Add(new int2(pt.x + dx, pt.y + dy));
         result.Add(p);
       }
       return result;
