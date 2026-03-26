@@ -40,12 +40,55 @@ namespace Clipper2Lib
 
 		#region Rect
 
+		public static readonly int4 InvalidRect64 = new(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
+		public static readonly float4 InvalidRectD = new(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int GetLeft(this in int4 rect)
+			=> rect.x;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float GetLeft(this in float4 rect)
+			=> rect.x;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int GetTop(this in int4 rect)
+			=> rect.y;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float GetTop(this in float4 rect)
+			=> rect.y;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int GetRight(this in int4 rect)
+			=> rect.z;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float GetRight(this in float4 rect)
+			=> rect.z;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int GetBottom(this in int4 rect)
+			=> rect.w;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float GetBottom(this in float4 rect)
+			=> rect.w;
+
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static int GetWidth(this in int4 rect)
 			=> rect.z - rect.x;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float GetWidth(this in float4 rect)
+			=> rect.z - rect.x;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static int GetHeight(this in int4 rect)
+			=> rect.w - rect.y;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float GetHeight(this in float4 rect)
 			=> rect.w - rect.y;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -103,21 +146,25 @@ namespace Clipper2Lib
 			&& (math.max(rect.y, other.y) <= math.min(rect.w, other.w));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void ToPath(this in int4 rect, Path64 path)
+		public static Path64 AsPath(this in int4 rect)
 		{
+			var path = new Path64(4);
 			path.Add(rect.xy);
 			path.Add(rect.zy);
 			path.Add(rect.zw);
 			path.Add(rect.xw);
+			return path;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void ToPath(this in float4 rect, PathD path)
+		public static PathD AsPath(this in float4 rect)
 		{
+			var path = new PathD(4);
 			path.Add(rect.xy);
 			path.Add(rect.zy);
 			path.Add(rect.zw);
 			path.Add(rect.xw);
+			return path;
 		}
 
 		#endregion
