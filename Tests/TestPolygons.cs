@@ -15,10 +15,8 @@ namespace Clipper2Lib.UnitTests
     [Test]
     public void TestClosedPaths()
     {
-      int testNum = 0;
-      while (true)
+      for (int testNum = 1; ; ++testNum)
       {
-        testNum++;
         Clipper64 c64 = new();
         Paths64 subj = new(), subj_open = new (), clip = new();
         Paths64 solution = new(), solution_open = new();

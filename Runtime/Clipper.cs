@@ -263,32 +263,33 @@ namespace Clipper2Lib
       int2 prevPt = path[^1];
       foreach (int2 pt in path)
       {
-        a += (prevPt.y + pt.y) * (prevPt.x - pt.x);
+        a += (float)(prevPt.y + pt.y) * (prevPt.x - pt.x);
         prevPt = pt;
       }
       return a * 0.5f;
     }
 
-    public static double Area(Paths64 paths)
+    public static float Area(Paths64 paths)
     {
-      double a = 0.0;
+      float a = 0f;
       foreach (Path64 path in paths)
         a += Area(path);
       return a;
     }
 
-    public static double Area(PathD path)
+    public static float Area(PathD path)
     {
-      double a = 0.0;
-      int cnt = path.Count;
-      if (cnt < 3) return 0.0;
-      float2 prevPt = path[cnt - 1];
+      float a = 0f;
+      if (path.Count < 3)
+        return 0f;
+
+      float2 prevPt = path[^1];
       foreach (float2 pt in path)
       {
         a += (prevPt.y + pt.y) * (prevPt.x - pt.x);
         prevPt = pt;
       }
-      return a * 0.5;
+      return a * 0.5f;
     }
 
     public static double Area(PathsD paths)
