@@ -160,8 +160,7 @@ namespace Clipper2Lib
       float arcTolerance = 0f
     )
     {
-      InternalClipper.CheckPrecision(precision);
-      float scale = math.exp10(precision);
+      float scale = InternalClipper.PrecisionToScale(precision);
       Paths64 tmp = ScalePaths64(paths, scale);
       ClipperOffset co = new ClipperOffset(miterLimit, scale * arcTolerance);
       co.AddPaths(tmp, joinType, endType);
@@ -185,9 +184,8 @@ namespace Clipper2Lib
     
     public static PathsD RectClip(float4 rect, PathsD paths, int precision = 2)
     {
-      InternalClipper.CheckPrecision(precision);
       if (rect.IsEmpty() || paths.Count == 0) return new PathsD();
-      float scale = math.exp10(precision);
+      float scale = InternalClipper.PrecisionToScale(precision);
       int4 r = ScaleRect(rect, scale);
       Paths64 tmpPath = ScalePaths64(paths, scale);
       RectClip64 rc = new RectClip64(r);
@@ -218,9 +216,8 @@ namespace Clipper2Lib
     public static PathsD RectClipLines(float4 rect, 
       PathsD paths, int precision = 2)
     {
-      InternalClipper.CheckPrecision(precision);
       if (rect.IsEmpty() || paths.Count == 0) return new PathsD();
-      float scale = math.exp10(precision);
+      float scale = InternalClipper.PrecisionToScale(precision);
       int4 r = ScaleRect(rect, scale);
       Paths64 tmpPath = ScalePaths64(paths, scale);
       RectClipLines64 rc = new RectClipLines64(r);
@@ -1046,8 +1043,7 @@ namespace Clipper2Lib
 
     public static PathD TrimCollinear(PathD path, int precision, bool isOpen = false)
     {
-      InternalClipper.CheckPrecision(precision);
-      float scale = math.exp10(precision);
+      float scale = InternalClipper.PrecisionToScale(precision);
       Path64 p = ScalePath64(path, scale);
       p = TrimCollinear(p, isOpen);
       return ScalePathD(p, 1 / scale);
@@ -1061,8 +1057,7 @@ namespace Clipper2Lib
     public static PointInPolygonResult PointInPolygon(float2 pt, 
       PathD polygon, int precision = 2)
     {
-      InternalClipper.CheckPrecision(precision);
-      float scale = math.exp10(precision);
+      float scale = InternalClipper.PrecisionToScale(precision);
       int2 p = (int2)(pt * scale);
       Path64 path = ScalePath64(polygon, scale);
       return InternalClipper.PointInPolygon(p, path);

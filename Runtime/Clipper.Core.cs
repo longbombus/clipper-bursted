@@ -83,37 +83,26 @@ namespace Clipper2Lib
     Negative
   }
 
-  public static class InternalClipper
+  internal static class InternalClipper
   {
-    internal const long MaxInt64 = 9223372036854775807;
-    internal const long MaxCoord = MaxInt64 / 4;
-    internal const double max_coord = MaxCoord;
-    internal const double min_coord = -MaxCoord;
-    internal const long Invalid64 = MaxInt64;
+    public const long MaxInt64 = 9223372036854775807;
+    public const long MaxCoord = MaxInt64 / 4;
+    public const double max_coord = MaxCoord;
+    public const double min_coord = -MaxCoord;
+    public const long Invalid64 = MaxInt64;
 
     internal const double floatingPointTolerance = 1E-12;
-    internal const double defaultMinimumEdgeLength = 0.1;
-
-    private static readonly string
-      precision_range_error = "Error: Precision is out of range.";
-
-    public static double CrossProduct(int2 pt1, int2 pt2, int2 pt3)
-    {
-      // typecast to double to avoid potential int overflow
-      return ((double) (pt2.x - pt1.x) * (pt3.y - pt2.y) -
-              (double) (pt2.y - pt1.y) * (pt3.x - pt2.x));
-    }
 
     public static int CrossProductSign(int2 pt1, int2 pt2, int2 pt3)
     {
-      long a = pt2.x - pt1.x;
-      long b = pt3.y - pt2.y;
-      long c = pt2.y - pt1.y;
-      long d = pt3.x - pt2.x;
+      int a = pt2.x - pt1.x;
+      int b = pt3.y - pt2.y;
+      int c = pt2.y - pt1.y;
+      int d = pt3.x - pt2.x;
       UInt128Struct ab = MultiplyUInt64((ulong) Math.Abs(a), (ulong) Math.Abs(b));
       UInt128Struct cd = MultiplyUInt64((ulong) Math.Abs(c), (ulong) Math.Abs(d));
-      int signAB = TriSign(a) * TriSign(b);
-      int signCD = TriSign(c) * TriSign(d);
+      int signAB = math.sign(a) * math.sign(b);
+      int signCD = math.sign(c) * math.sign(d);
 
       if (signAB == signCD)
       {
@@ -130,11 +119,8 @@ namespace Clipper2Lib
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static void CheckPrecision(int precision)
-    {
-      if (precision < -8 || precision > 8)
-        throw new Exception(precision_range_error);
-    }
+    internal static float PrecisionToScale(int precision)
+      => math.exp10(math.clamp(precision, -8, 8));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static int TriSign(long x) // returns 0, 1 or -1
@@ -161,42 +147,42 @@ namespace Clipper2Lib
     }
 
     // returns true if (and only if) a * b == c * d
-    internal static bool ProductsAreEqual(long a, long b, long c, long d)
+    internal static bool ProductsAreEqual(int a, int b, int c, int d)
     {
       // nb: unsigned values will be needed for CalcOverflowCarry()
-      ulong absA = (ulong) Math.Abs(a);
-      ulong absB = (ulong) Math.Abs(b);
-      ulong absC = (ulong) Math.Abs(c);
-      ulong absD = (ulong) Math.Abs(d);
+      ulong absA = (ulong)math.abs(a);
+      ulong absB = (ulong)math.abs(b);
+      ulong absC = (ulong)math.abs(c);
+      ulong absD = (ulong)math.abs(d);
 
-      UInt128Struct mul_ab = MultiplyUInt64(absA, absB);
-      UInt128Struct mul_cd = MultiplyUInt64(absC, absD);
+      ulong mul_ab = absA * absB;
+      ulong mul_cd = absC * absD;
 
       // nb: it's important to differentiate 0 values here from other values
-      int sign_ab = TriSign(a) * TriSign(b);
-      int sign_cd = TriSign(c) * TriSign(d);
+      int sign_ab = math.sign(a) * math.sign(b);
+      int sign_cd = math.sign(c) * math.sign(d);
 
-      return mul_ab.lo64 == mul_cd.lo64 && mul_ab.hi64 == mul_cd.hi64 && sign_ab == sign_cd;
+      return mul_ab == mul_cd && sign_ab == sign_cd;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static bool IsCollinear(int2 pt1, int2 sharedPt, int2 pt2)
     {
-      long a = sharedPt.x - pt1.x;
-      long b = pt2.y - sharedPt.y;
-      long c = sharedPt.y - pt1.y;
-      long d = pt2.x - sharedPt.x;
+      int a = sharedPt.x - pt1.x;
+      int b = pt2.y - sharedPt.y;
+      int c = sharedPt.y - pt1.y;
+      int d = pt2.x - sharedPt.x;
       // When checking for collinearity with very large coordinate values
       // then ProductsAreEqual is more accurate than using CrossProduct.
       return ProductsAreEqual(a, b, c, d);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static double DotProduct(int2 pt1, int2 pt2, int2 pt3)
+    internal static float DotProduct(int2 pt1, int2 pt2, int2 pt3)
     {
-      // typecast to double to avoid potential int overflow
-      return ((double) (pt2.x - pt1.x) * (pt3.x - pt2.x) +
-              (double) (pt2.y - pt1.y) * (pt3.y - pt2.y));
+      float2 a = pt2 - pt1;
+      float2 b = pt3 - pt2;
+      return math.dot(a, b);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -217,55 +203,51 @@ namespace Clipper2Lib
     // seg2, even when 'ip' hasn't been constrained (ie 'ip' is inside seg1).
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool GetLineIntersectPt(int2 ln1a,
-      int2 ln1b, int2 ln2a, int2 ln2b, out int2 ip)
+    public static bool GetLineIntersectPt(int2 ln1a, int2 ln1b, int2 ln2a, int2 ln2b, out int2 ip)
     {
-      double dy1 = (ln1b.y - ln1a.y);
-      double dx1 = (ln1b.x - ln1a.x);
-      double dy2 = (ln2b.y - ln2a.y);
-      double dx2 = (ln2b.x - ln2a.x);
-      double det = dy1 * dx2 - dy2 * dx1;
-      if (det == 0.0)
+      float2 d1 = ln1b - ln1a;
+      float2 d2 = ln2b - ln2a;
+      float det = d1.y * d2.x - d2.y * d1.x;
+      if (det == 0f)
       {
-        ip = new int2();
+        ip = default;
         return false;
       }
 
-      double t = ((ln1a.x - ln2a.x) * dy2 - (ln1a.y - ln2a.y) * dx2) / det;
+      float2 deltaA = ln1a - ln2a;
+
+      float t = (deltaA.x * d2.y - deltaA.y * d2.x) / det;
       if (t <= 0.0) ip = ln1a;
       else if (t >= 1.0) ip = ln1b;
       else
       {
         // avoid using constructor (and rounding too) as they affect performance //664
-        ip.x = (int) (ln1a.x + t * dx1);
-        ip.y = (int) (ln1a.y + t * dy1);
+        ip = (int2)((float2)ln1a + (d1 * t));
       }
       return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool GetLineIntersectPt(float2 ln1a,
-      float2 ln1b, float2 ln2a, float2 ln2b, out float2 ip)
+    public static bool GetLineIntersectPt(float2 ln1a, float2 ln1b, float2 ln2a, float2 ln2b, out float2 ip)
     {
-      float dy1 = (ln1b.y - ln1a.y);
-      float dx1 = (ln1b.x - ln1a.x);
-      float dy2 = (ln2b.y - ln2a.y);
-      float dx2 = (ln2b.x - ln2a.x);
-      float det = dy1 * dx2 - dy2 * dx1;
+      float2 d1 = ln1b - ln1a;
+      float2 d2 = ln2b - ln2a;
+      float det = d1.y * d2.x - d2.y * d1.x;
       if (det == 0.0)
       {
         ip = new float2();
         return false;
       }
 
-      float t = ((ln1a.x - ln2a.x) * dy2 - (ln1a.y - ln2a.y) * dx2) / det;
+      float2 deltaA = ln1a - ln2a;
+
+      float t = (deltaA.x * d2.y - deltaA.y * d2.x) / det;
       if (t <= 0.0) ip = ln1a;
       else if (t >= 1.0) ip = ln1b;
       else
       {
         // avoid using constructor (and rounding too) as they affect performance //664
-        ip.x = (ln1a.x + t * dx1);
-        ip.y = (ln1a.y + t * dy1);
+        ip = ln1a + d1 * t;
       }
       return true;
     }
