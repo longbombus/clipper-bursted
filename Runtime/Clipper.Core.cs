@@ -99,52 +99,26 @@ namespace Clipper2Lib
       int b = pt3.y - pt2.y;
       int c = pt2.y - pt1.y;
       int d = pt3.x - pt2.x;
-      UInt128Struct ab = MultiplyUInt64((ulong) Math.Abs(a), (ulong) Math.Abs(b));
-      UInt128Struct cd = MultiplyUInt64((ulong) Math.Abs(c), (ulong) Math.Abs(d));
+      ulong ab = (ulong)math.abs(a) * (ulong)math.abs(b);
+      ulong cd = (ulong)math.abs(c) * (ulong)math.abs(d);
       int signAB = math.sign(a) * math.sign(b);
       int signCD = math.sign(c) * math.sign(d);
 
       if (signAB == signCD)
       {
-        int result;
-        if (ab.hi64 == cd.hi64)
-        {
-          if (ab.lo64 == cd.lo64) return 0;
-          result = (ab.lo64 > cd.lo64) ? 1 : -1;
-        }
-        else result = (ab.hi64 > cd.hi64) ? 1 : -1;
+        if (ab == cd)
+          return 0;
+
+        int result = (ab > cd) ? 1 : -1;
         return (signAB > 0) ? result : -result;
       }
+
       return (signAB > signCD) ? 1 : -1;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static float PrecisionToScale(int precision)
       => math.exp10(math.clamp(precision, -8, 8));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static int TriSign(long x) // returns 0, 1 or -1
-    {
-      return (x < 0) ? -1 : (x > 0) ? 1 : 0;
-    }
-
-    public struct UInt128Struct
-    {
-      public ulong lo64;
-      public ulong hi64;
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static UInt128Struct MultiplyUInt64(ulong a, ulong b) // #834,#835
-    {
-      ulong x1 = (a & 0xFFFFFFFF) * (b & 0xFFFFFFFF);
-      ulong x2 = (a >> 32) * (b & 0xFFFFFFFF) + (x1 >> 32);
-      ulong x3 = (a & 0xFFFFFFFF) * (b >> 32) + (x2 & 0xFFFFFFFF);
-      UInt128Struct result;
-      result.lo64 = (x3 & 0xFFFFFFFF) << 32 | (x1 & 0xFFFFFFFF);
-      result.hi64 = (a >> 32) * (b >> 32) + (x2 >> 32) + (x3 >> 32);
-      return result;
-    }
 
     // returns true if (and only if) a * b == c * d
     internal static bool ProductsAreEqual(int a, int b, int c, int d)

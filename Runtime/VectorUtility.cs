@@ -5,15 +5,11 @@ namespace Clipper2Lib
 {
 	public static class VectorUtility
 	{
-		public const int MaxFloatInt = Huge * Huge;
-		public const int Huge = 4096;
-		public const float Tiny = 1f / Huge;
-
 		#region Scalar
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsAlmostZero(this float value)
-			=> math.abs(value) < Tiny;
+			=> math.abs(value) < math.EPSILON;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static float Sqr(this float value)
