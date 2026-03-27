@@ -2,6 +2,8 @@
     "name": "Clipper",
     "rootNamespace": "Clipper2Lib",
     "references": [
+        "Unity.Burst",
+        "Unity.Collections",
         "Unity.Mathematics"
     ],
     "includePlatforms": [],
