@@ -282,22 +282,64 @@ namespace Clipper
     }
     public static PathsI MinkowskiSum(PathI pattern, PathI path, bool isClosed)
     {
-      return Minkowski.Sum(pattern, path, isClosed);
+      var patArr = new NativeArray<int2>(pattern.Count, Allocator.Temp);
+      var pathArr = new NativeArray<int2>(path.Count, Allocator.Temp);
+      for (int i = 0; i < pattern.Count; ++i) patArr[i] = pattern[i];
+      for (int i = 0; i < path.Count; ++i) pathArr[i] = path[i];
+      var sl = Minkowski.Sum(patArr, pathArr, isClosed, Allocator.Temp);
+      patArr.Dispose();
+      pathArr.Dispose();
+
+      PathsI res = new PathsI(sl.SliceCount);
+      for (int si = 0; si < sl.SliceCount; ++si)
+      {
+        var slice = sl.GetSlice(si);
+        PathI p = new PathI(slice.Length);
+        for (int k = 0; k < slice.Length; ++k) p.Add(slice[k]);
+        res.Add(p);
+      }
+      sl.Dispose();
+      return Clipper.Union(res, FillRule.NonZero);
     }
 
     public static PathsF MinkowskiSum(PathF pattern, PathF path, bool isClosed)
     {
-      return Minkowski.Sum(pattern, path, isClosed);
+      float scale = InternalClipper.PrecisionToScale(2);
+      PathI p1 = ScalePath64(pattern, scale);
+      PathI p2 = ScalePath64(path, scale);
+      PathsI resI = MinkowskiSum(p1, p2, isClosed);
+      return ScalePathsD(resI, 1 / scale);
     }
 
     public static PathsI MinkowskiDiff(PathI pattern, PathI path, bool isClosed)
     {
-      return Minkowski.Diff(pattern, path, isClosed);
+      var patArr = new NativeArray<int2>(pattern.Count, Allocator.Temp);
+      var pathArr = new NativeArray<int2>(path.Count, Allocator.Temp);
+      for (int i = 0; i < pattern.Count; ++i) patArr[i] = pattern[i];
+      for (int i = 0; i < path.Count; ++i) pathArr[i] = path[i];
+      var sl = Minkowski.Diff(patArr, pathArr, isClosed, Allocator.Temp);
+      patArr.Dispose();
+      pathArr.Dispose();
+
+      PathsI res = new PathsI(sl.SliceCount);
+      for (int si = 0; si < sl.SliceCount; ++si)
+      {
+        var slice = sl.GetSlice(si);
+        PathI p = new PathI(slice.Length);
+        for (int k = 0; k < slice.Length; ++k) p.Add(slice[k]);
+        res.Add(p);
+      }
+      sl.Dispose();
+      return Clipper.Union(res, FillRule.NonZero);
     }
 
     public static PathsF MinkowskiDiff(PathF pattern, PathF path, bool isClosed)
     {
-      return Minkowski.Diff(pattern, path, isClosed);
+      float scale = InternalClipper.PrecisionToScale(2);
+      PathI p1 = ScalePath64(pattern, scale);
+      PathI p2 = ScalePath64(path, scale);
+      PathsI resI = MinkowskiDiff(p1, p2, isClosed);
+      return ScalePathsD(resI, 1 / scale);
     }
 
     public static float Area(PathI path)
