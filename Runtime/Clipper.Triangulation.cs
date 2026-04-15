@@ -84,7 +84,7 @@ namespace Clipper
       useDelaunay = delaunay;
     }
 
-    private void AddPath(Path64 path)
+    private void AddPath(PathI path)
     {
       int len = path.Count;
       if (len == 0) return;
@@ -195,17 +195,17 @@ namespace Clipper
       }
     }
 
-    private bool AddPaths(Paths64 paths)
+    private bool AddPaths(PathsI paths)
     {
       int totalVertexCount = 0;
-      foreach (Path64 path in paths)
+      foreach (PathI path in paths)
         totalVertexCount += path.Count;
       if (totalVertexCount == 0) return false;
 
       allVertices.Capacity = allVertices.Count + totalVertexCount;
       allEdges.Capacity = allEdges.Count + totalVertexCount;
 
-      foreach (Path64 path in paths)
+      foreach (PathI path in paths)
         AddPath(path);
 
       return allVertices.Count > 2;
@@ -752,9 +752,9 @@ namespace Clipper
       if (firstActive == edge) firstActive = next;
     }
 
-    internal TriangulateResult Execute(Paths64 paths, out Paths64 sol)
+    internal TriangulateResult Execute(PathsI paths, out PathsI sol)
     {
-      sol = new Paths64();
+      sol = new PathsI();
 
       if (!AddPaths(paths))
       {
@@ -906,10 +906,10 @@ namespace Clipper
         }
       }
 
-      sol = new Paths64(allTriangles.Count);
+      sol = new PathsI(allTriangles.Count);
       foreach (Triangle tri in allTriangles)
       {
-        Path64 p = PathFromTriangle(tri);
+        PathI p = PathFromTriangle(tri);
         int cps = InternalClipper.CrossProductSign(p[0], p[1], p[2]);
         if (cps == 0) continue;
         if (cps < 0) p.Reverse();
@@ -1002,7 +1002,7 @@ namespace Clipper
       vert.edges.RemoveAt(idx);
     }
 
-    private static bool FindLocMinIdx(Path64 path, int len, ref int idx)
+    private static bool FindLocMinIdx(PathI path, int len, ref int idx)
     {
       if (len < 3) return false;
       int i0 = idx;
@@ -1052,9 +1052,9 @@ namespace Clipper
       return res;
     }
 
-    private static Path64 PathFromTriangle(Triangle tri)
+    private static PathI PathFromTriangle(Triangle tri)
     {
-      Path64 res = new Path64(3)
+      PathI res = new PathI(3)
             {
                 tri.edges[0].vL.pt,
                 tri.edges[0].vR.pt

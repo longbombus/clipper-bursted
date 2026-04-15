@@ -36,20 +36,20 @@ namespace Clipper
 
     private class Group
     {
-      internal Paths64 inPaths;
+      internal PathsI inPaths;
       internal JoinType joinType;
       internal EndType endType;
       internal bool pathsReversed;
       internal int lowestPathIdx;
 
-      public Group(Paths64 paths, JoinType joinType, EndType endType = EndType.Polygon)
+      public Group(PathsI paths, JoinType joinType, EndType endType = EndType.Polygon)
       {
         this.joinType = joinType;
         this.endType = endType;
 
         bool isJoined = ((endType == EndType.Polygon) || (endType == EndType.Joined));
-        inPaths = new Paths64(paths.Count);
-        foreach(Path64 path in paths)
+        inPaths = new PathsI(paths.Count);
+        foreach(PathI path in paths)
           inPaths.Add(Clipper.StripDuplicates(path, isJoined));
 
         if (endType == EndType.Polygon)
@@ -86,9 +86,9 @@ namespace Clipper
     private const float arc_const = 0.002f; // <-- 1/500
 
     private readonly List<Group> _groupList = new List<Group>();
-    private Path64 pathOut = new Path64();
-    private readonly PathD _normals = new PathD();
-    private Paths64 _solution = new Paths64();
+    private PathI pathOut = new PathI();
+    private readonly PathF _normals = new PathF();
+    private PathsI _solution = new PathsI();
     private PolyTree64? _solutionTree;
 
     private float _groupDelta; //*0.5 for open paths; *-1.0 for negative areas
@@ -105,7 +105,7 @@ namespace Clipper
     public bool PreserveCollinear { get; set; }
     public bool ReverseSolution { get; set; }
 
-    public delegate float DeltaCallback64(Path64 path, PathD path_norms, int currPt, int prevPt);
+    public delegate float DeltaCallback64(PathI path, PathF path_norms, int currPt, int prevPt);
     public DeltaCallback64 DeltaCallback { get; set; }
 
     public ClipperOffset(
@@ -126,15 +126,15 @@ namespace Clipper
       _groupList.Clear();
     }
 
-    public void AddPath(Path64 path, JoinType joinType, EndType endType)
+    public void AddPath(PathI path, JoinType joinType, EndType endType)
     {
       int cnt = path.Count;
       if (cnt == 0) return;
-      Paths64 pp = new Paths64(1) { path };
+      PathsI pp = new PathsI(1) { path };
       AddPaths(pp, joinType, endType);
     }
 
-    public void AddPaths(Paths64 paths, JoinType joinType, EndType endType)
+    public void AddPaths(PathsI paths, JoinType joinType, EndType endType)
     {
       int cnt = paths.Count;
       if (cnt == 0) return;
@@ -170,7 +170,7 @@ namespace Clipper
       if (Math.Abs(delta) < 0.5)
       {
         foreach (Group group in _groupList)
-          foreach (Path64 path in group.inPaths)
+          foreach (PathI path in group.inPaths)
             _solution.Add(path);
         return;
       }
@@ -199,7 +199,7 @@ namespace Clipper
 
     }
 
-    public void Execute(float delta, Paths64 solution)
+    public void Execute(float delta, PathsI solution)
     {
       solution.Clear();
       _solution = solution;
@@ -228,13 +228,13 @@ namespace Clipper
       return new float2(result.y, -result.x);
     }
 
-    public void Execute(DeltaCallback64 deltaCallback, Paths64 solution)
+    public void Execute(DeltaCallback64 deltaCallback, PathsI solution)
     {
       DeltaCallback = deltaCallback;
       Execute(1f, solution);
     }    
     
-    internal static void GetLowestPathInfo(Paths64 paths, out int idx, out bool isNegArea)
+    internal static void GetLowestPathInfo(PathsI paths, out int idx, out bool isNegArea)
     {
       idx = -1;
       isNegArea = false;
@@ -297,7 +297,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoBevel(Path64 path, int j, int k)
+    private void DoBevel(PathI path, int j, int k)
     {
       int2 pt1, pt2;
       if (j == k)
@@ -318,7 +318,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoSquare(Path64 path, int j, int k)
+    private void DoSquare(PathI path, int j, int k)
     {
       float2 vec;
       if (j == k)
@@ -364,7 +364,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoMiter(Path64 path, int j, int k, float cosA)
+    private void DoMiter(PathI path, int j, int k, float cosA)
     {
       float q = _groupDelta / (cosA + 1);
 
@@ -372,7 +372,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoRound(Path64 path, int j, int k, float angle)
+    private void DoRound(PathI path, int j, int k, float angle)
     {
       if (DeltaCallback != null)
       {
@@ -406,7 +406,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BuildNormals(Path64 path)
+    private void BuildNormals(PathI path)
     {
       int cnt = path.Count;
       _normals.Clear();
@@ -417,7 +417,7 @@ namespace Clipper
       _normals.Add(GetUnitNormal(path[cnt - 1], path[0]));
     }
 
-    private void OffsetPoint(Group group, Path64 path, int j, ref int k)
+    private void OffsetPoint(Group group, PathI path, int j, ref int k)
     {
       if (path[j].Equals(path[k])) { k = j; return; }
 
@@ -481,9 +481,9 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void OffsetPolygon(Group group, Path64 path)
+    private void OffsetPolygon(Group group, PathI path)
     {
-      pathOut = new Path64();
+      pathOut = new PathI();
       int cnt = path.Count, prev = cnt - 1;
       for (int i = 0; i < cnt; i++)
         OffsetPoint(group, path, i, ref prev);
@@ -491,7 +491,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void OffsetOpenJoined(Group group, Path64 path)
+    private void OffsetOpenJoined(Group group, PathI path)
     {
       OffsetPolygon(group, path);
       path = Clipper.ReversePath(path);
@@ -499,9 +499,9 @@ namespace Clipper
       OffsetPolygon(group, path);
     }
 
-    private void OffsetOpenPath(Group group, Path64 path)
+    private void OffsetOpenPath(Group group, PathI path)
     {
-      pathOut = new Path64();
+      pathOut = new PathI();
       int highI = path.Count - 1;
 
       if (DeltaCallback != null) 
@@ -586,12 +586,12 @@ namespace Clipper
         _stepsPerRad = stepsPer360 / math.TAU;
       }
 
-      using List<Path64>.Enumerator pathIt = group.inPaths.GetEnumerator();
+      using List<PathI>.Enumerator pathIt = group.inPaths.GetEnumerator();
       while (pathIt.MoveNext())
       {
-        Path64 p = pathIt.Current!;
+        PathI p = pathIt.Current!;
 
-        pathOut = new Path64();
+        pathOut = new PathI();
         int cnt = p.Count;
 
         switch (cnt)

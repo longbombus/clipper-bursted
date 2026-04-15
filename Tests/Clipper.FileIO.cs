@@ -16,11 +16,11 @@ namespace Clipper.Tests
 {
   public static class ClipperFileIO
   {
-    public static Paths64 PathFromStr(string? s)
+    public static PathsI PathFromStr(string? s)
     {
-      if (s == null) return new Paths64();
-      Path64 p = new Path64();
-      Paths64 pp = new Paths64();
+      if (s == null) return new PathsI();
+      PathI p = new PathI();
+      PathsI pp = new PathsI();
       int len = s.Length, i = 0;
       while (i < len)
       {
@@ -59,7 +59,7 @@ namespace Clipper.Tests
             if (nlCnt == 2)
             {
               if (p.Count > 0) pp.Add(p);
-              p = new Path64();
+              p = new PathI();
             }
           }
           i++;
@@ -71,12 +71,12 @@ namespace Clipper.Tests
     //------------------------------------------------------------------------------
 
     public static bool LoadTestNum(string filename, int num,
-      Paths64? subj, Paths64? subj_open, Paths64? clip,
+      PathsI? subj, PathsI? subj_open, PathsI? clip,
       out ClipType ct, out FillRule fillRule, out long area, out int count, out string caption)
     {
-      if (subj == null) subj = new Paths64(); else subj.Clear();
-      if (subj_open == null) subj_open = new Paths64(); else subj_open.Clear();
-      if (clip == null) clip = new Paths64(); else clip.Clear();
+      if (subj == null) subj = new PathsI(); else subj.Clear();
+      if (subj_open == null) subj_open = new PathsI(); else subj_open.Clear();
+      if (clip == null) clip = new PathsI(); else clip.Clear();
       ct = ClipType.Intersection;
       fillRule = FillRule.EvenOdd;
       bool result = false;
@@ -152,7 +152,7 @@ namespace Clipper.Tests
         {
           s = reader.ReadLine();
           if (s == null) break;
-          Paths64? paths = PathFromStr(s); //0 or 1 path
+          PathsI? paths = PathFromStr(s); //0 or 1 path
           if (paths == null || paths.Count == 0)
           {
             if (GetIdx == 3) return result;
@@ -180,8 +180,8 @@ namespace Clipper.Tests
 
     //-----------------------------------------------------------------------
 
-    public static void SaveClippingOp(string filename, Paths64? subj,
-      Paths64? subj_open, Paths64? clip, ClipType ct, FillRule fillRule, bool append)
+    public static void SaveClippingOp(string filename, PathsI? subj,
+      PathsI? subj_open, PathsI? clip, ClipType ct, FillRule fillRule, bool append)
     {
       StreamWriter writer;
       try
@@ -198,7 +198,7 @@ namespace Clipper.Tests
       if (subj != null && subj.Count > 0)
       {
         writer.Write("SUBJECTS\r\n");
-        foreach (Path64 p in subj)
+        foreach (PathI p in subj)
         {
           foreach (int2 ip in p)
             writer.Write("{0},{1} ", ip.x, ip.y);
@@ -208,7 +208,7 @@ namespace Clipper.Tests
       if (subj_open != null && subj_open.Count > 0)
       {
         writer.Write("SUBJECTS_OPEN\r\n");
-        foreach (Path64 p in subj_open)
+        foreach (PathI p in subj_open)
         {
           foreach (int2 ip in p)
             writer.Write("{0},{1} ", ip.x, ip.y);
@@ -218,7 +218,7 @@ namespace Clipper.Tests
       if (clip != null && clip.Count > 0)
       {
         writer.Write("CLIPS\r\n");
-        foreach (Path64 p in clip)
+        foreach (PathI p in clip)
         {
           foreach (int2 ip in p)
             writer.Write(ip.ToString());
@@ -228,7 +228,7 @@ namespace Clipper.Tests
       writer.Close();
     }
 
-    public static void SaveToBinFile(string filename, Paths64 paths)
+    public static void SaveToBinFile(string filename, PathsI paths)
     {
       FileStream filestream;
       try
@@ -249,7 +249,7 @@ namespace Clipper.Tests
         return;
       }
       writer.Write(paths.Count);
-      foreach (Path64 path in paths)
+      foreach (PathI path in paths)
       {
         writer.Write(path.Count);
         foreach (int2 pt in path)
@@ -262,12 +262,12 @@ namespace Clipper.Tests
     }
     //------------------------------------------------------------------------------
 
-    public static Paths64 AffineTranslatePaths(Paths64 paths, int dx, int dy)
+    public static PathsI AffineTranslatePaths(PathsI paths, int dx, int dy)
     {
-      Paths64 result = new Paths64(paths.Count);
-      foreach (Path64 path in paths)
+      PathsI result = new PathsI(paths.Count);
+      foreach (PathI path in paths)
       {
-        Path64 p = new Path64(path.Count);
+        PathI p = new PathI(path.Count);
         foreach (int2 pt in path)
           p.Add(new int2(pt.x + dx, pt.y + dy));
         result.Add(p);

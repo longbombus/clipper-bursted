@@ -34,7 +34,7 @@ namespace Clipper.Benchmark
 				clipper.AddPath(circle, pathType);
 			}
 
-			var solution = new PathsD();
+			var solution = new PathsF();
 			clipper.Execute(clipType, fillRule, solution);
 
 			foreach (var path in solution)

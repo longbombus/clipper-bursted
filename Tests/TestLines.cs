@@ -11,8 +11,8 @@ namespace Clipper.Tests
       for (int i = 0; i <= 16; i++)
       {
         Clipper64 c64 = new();
-        Paths64 subj = new(), subj_open = new(), clip = new();
-        Paths64 solution = new(), solution_open = new();
+        PathsI subj = new(), subj_open = new(), clip = new();
+        PathsI solution = new(), solution_open = new();
 
         Assert.IsTrue(ClipperFileIO.LoadTestNum( "Tests/Lines.txt",
           i, subj, subj_open, clip, out ClipType clipType, out FillRule fillrule,  

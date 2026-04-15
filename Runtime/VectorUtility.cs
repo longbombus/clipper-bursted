@@ -137,9 +137,9 @@ namespace Clipper
 			&& (math.max(rect.y, other.y) <= math.min(rect.w, other.w));
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static Path64 AsPath(this in int4 rect)
+		public static PathI AsPath(this in int4 rect)
 		{
-			var path = new Path64(4);
+			var path = new PathI(4);
 			path.Add(rect.xy);
 			path.Add(rect.zy);
 			path.Add(rect.zw);
@@ -148,9 +148,9 @@ namespace Clipper
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static PathD AsPath(this in float4 rect)
+		public static PathF AsPath(this in float4 rect)
 		{
-			var path = new PathD(4);
+			var path = new PathF(4);
 			path.Add(rect.xy);
 			path.Add(rect.zy);
 			path.Add(rect.zw);

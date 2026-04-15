@@ -8,7 +8,7 @@ namespace Clipper.Tests
     [Test]
     public void TestOffsetEmpty()
     {
-      Paths64 solution = new();
+      PathsI solution = new();
 
       ClipperOffset offset = new ClipperOffset();
       offset.Execute(10, solution);

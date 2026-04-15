@@ -60,7 +60,7 @@ namespace Clipper.Tests
   [Test]
     public void TestPolytree2()
     {
-      Paths64 subject = new(), subjectOpen = new(), clip = new();
+      PathsI subject = new(), subjectOpen = new(), clip = new();
 
       Assert.IsTrue(ClipperFileIO.LoadTestNum("Tests/PolytreeHoleOwner2.txt",
         1, subject, subjectOpen, clip, out ClipType cliptype, out FillRule fillrule, 
@@ -68,10 +68,10 @@ namespace Clipper.Tests
           "Unable to read PolytreeHoleOwner2.txt");
 
       PolyTree64 solutionTree = new();
-      Paths64 solution_open = new();
+      PathsI solution_open = new();
       Clipper64 clipper = new();
 
-      Path64 pointsOfInterestOutside = new()
+      PathI pointsOfInterestOutside = new()
       {
         new int2(21887, 10420),
         new int2(21726, 10825),
@@ -81,14 +81,14 @@ namespace Clipper.Tests
 
       foreach (int2 pt in pointsOfInterestOutside)
       {
-        foreach (Path64 path in subject)
+        foreach (PathI path in subject)
         {
           Assert.IsTrue(Clipper.PointInPolygon(pt, path) == PointInPolygonResult.IsOutside, 
             "outside point of interest found inside subject");
         }
       }
 
-      Path64 pointsOfInterestInside = new()
+      PathI pointsOfInterestInside = new()
       {
         new int2(21887, 10430),
         new int2(21843, 10520),
@@ -99,7 +99,7 @@ namespace Clipper.Tests
       foreach (int2 pt in pointsOfInterestInside)
       {
         int poi_inside_counter = 0;
-        foreach (Path64 path in subject)
+        foreach (PathI path in subject)
         {
           if (Clipper.PointInPolygon(pt, path) == PointInPolygonResult.IsInside)
             poi_inside_counter++;
@@ -113,7 +113,7 @@ namespace Clipper.Tests
       clipper.AddClip(clip);
       clipper.Execute(cliptype, fillrule, solutionTree, solution_open);
 
-      Paths64 solutionPaths = Clipper.PolyTreeToPaths64(solutionTree);
+      PathsI solutionPaths = Clipper.PolyTreeToPaths64(solutionTree);
       double a1 = Clipper.Area(solutionPaths), a2 = solutionTree.Area();
 
       Assert.IsTrue(a1 > 330000, 
@@ -138,7 +138,7 @@ namespace Clipper.Tests
   [Test]
     public void TestPolytree3()
     {
-      Paths64 subject = new()
+      PathsI subject = new()
       {
         Clipper.MakePath(new int[] {1588700, -8717600,
         1616200, -8474800, 1588700, -8474800 }),

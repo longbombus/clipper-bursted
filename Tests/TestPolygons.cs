@@ -18,8 +18,8 @@ namespace Clipper.Tests
       for (int testNum = 1; ; ++testNum)
       {
         Clipper64 c64 = new();
-        Paths64 subj = new(), subj_open = new (), clip = new();
-        Paths64 solution = new(), solution_open = new();
+        PathsI subj = new(), subj_open = new (), clip = new();
+        PathsI solution = new(), solution_open = new();
 
         if (!ClipperFileIO.LoadTestNum("Tests/Polygons.txt",
           testNum, subj, subj_open, clip, out ClipType clipType, out FillRule fillrule, 

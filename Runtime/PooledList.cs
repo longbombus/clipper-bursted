@@ -102,7 +102,7 @@ namespace Clipper
         outRec.backEdge = null;
         outRec.pts = null;
         outRec.bounds = new int4();
-        outRec.path = new Path64();
+        outRec.path = new PathI();
         outRec.polypath = null;
         outRec.isOpen = false;
         outRec.splits?.Clear();
@@ -113,7 +113,7 @@ namespace Clipper
     }
 
     //tombStone marks cleared OutRec in the pool
-    private static readonly Path64 tombStone = new Path64();
+    private static readonly PathI tombStone = new PathI();
     public override void Clear()
     {
       base.Clear();

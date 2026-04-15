@@ -38,7 +38,7 @@ namespace Clipper
 
     readonly protected int4 rect_;
     readonly protected int2 mp_;
-    readonly protected Path64 rectPath_;
+    readonly protected PathI rectPath_;
     protected int4 pathBounds_;
     protected List<OutPt2?> results_;
     protected List<OutPt2?>[] edges_;
@@ -87,7 +87,7 @@ namespace Clipper
       return result;
     }
 
-    private static bool Path1ContainsPath2(Path64 path1, Path64 path2)
+    private static bool Path1ContainsPath2(PathI path1, PathI path2)
     {
       // nb: occasionally, due to rounding, path1 may 
       // appear (momentarily) inside or outside path2.
@@ -331,7 +331,7 @@ namespace Clipper
     }
   
 
-    static protected bool GetIntersection(Path64 rectPath, int2 p, int2 p2, ref Location loc, out int2 ip)
+    static protected bool GetIntersection(PathI rectPath, int2 p, int2 p2, ref Location loc, out int2 ip)
     {
       // gets the pt of intersection between rectPath and segment(p, p2) that's closest to 'p'
       // when result == false, loc will remain unchanged
@@ -413,7 +413,7 @@ namespace Clipper
       }
     }
 
-    protected void GetNextLocation(Path64 path,
+    protected void GetNextLocation(PathI path,
       ref Location loc, ref int i, int highI)
     {
       switch (loc)
@@ -500,7 +500,7 @@ namespace Clipper
       return result > 0;
     }
 
-    private void ExecuteInternal(Path64 path)
+    private void ExecuteInternal(PathI path)
     {
       if (path.Count < 3 || rect_.IsEmpty()) return;      
       List<Location> startLocs = new List<Location>();
@@ -651,11 +651,11 @@ namespace Clipper
       }
     }
 
-    public Paths64 Execute(Paths64 paths)
+    public PathsI Execute(PathsI paths)
     {
-      Paths64 result = new Paths64();
+      PathsI result = new PathsI();
       if (rect_.IsEmpty()) return result;
-      foreach (Path64 path in paths)
+      foreach (PathI path in paths)
       {
         if (path.Count < 3) continue;
         pathBounds_ = Clipper.GetBounds(path);
@@ -674,7 +674,7 @@ namespace Clipper
 
         foreach (OutPt2? op in results_)
         {
-          Path64 tmp = GetPath(op);
+          PathI tmp = GetPath(op);
           if (tmp.Count > 0) result.Add(tmp);
         }
 
@@ -923,9 +923,9 @@ namespace Clipper
       }
     }
 
-    private static Path64 GetPath(OutPt2? op)
+    private static PathI GetPath(OutPt2? op)
     { 
-      Path64 result = new Path64();
+      PathI result = new PathI();
       if (op == null || op.prev == op.next) return result;
       OutPt2? op2 = op.next;
       while (op2 != null && op2 != op)
@@ -939,7 +939,7 @@ namespace Clipper
         else
           op2 = op2.next;
       }
-      if (op2 == null) return new Path64();
+      if (op2 == null) return new PathI();
 
       result.Add(op.pt);
       op2 = op.next;
@@ -957,11 +957,11 @@ namespace Clipper
   {
     internal RectClipLines64(int4 rect) : base(rect) { }
 
-    public new Paths64 Execute(Paths64 paths)
+    public new PathsI Execute(PathsI paths)
     {
-      Paths64 result = new Paths64();
+      PathsI result = new PathsI();
       if (rect_.IsEmpty()) return result;
-      foreach (Path64 path in paths)
+      foreach (PathI path in paths)
       {
         if (path.Count < 2) continue;
         pathBounds_ = Clipper.GetBounds(path);
@@ -974,7 +974,7 @@ namespace Clipper
 
         foreach (OutPt2? op in results_)
         {
-          Path64 tmp = GetPath(op);
+          PathI tmp = GetPath(op);
           if (tmp.Count > 0) result.Add(tmp);
         }
 
@@ -986,9 +986,9 @@ namespace Clipper
       return result;
     }
 
-    private static Path64 GetPath(OutPt2? op)
+    private static PathI GetPath(OutPt2? op)
     {
-      Path64 result = new Path64();
+      PathI result = new PathI();
       if (op == null || op == op.next) return result;
       op = op.next; // starting at path beginning 
       result.Add(op!.pt);
@@ -1001,7 +1001,7 @@ namespace Clipper
       return result;
     }
 
-    private void ExecuteInternal(Path64 path)
+    private void ExecuteInternal(PathI path)
     {
       results_.Clear();
       if (path.Count < 2 || rect_.IsEmpty()) return;

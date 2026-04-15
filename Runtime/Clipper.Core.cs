@@ -16,42 +16,42 @@ using Unity.Mathematics;
 namespace Clipper
 {
 
-  public class Path64 : List<int2>
+  public class PathI : List<int2>
   {
-    public Path64() : base() { }
-    public Path64(int capacity = 0) : base(capacity) { }
-    public Path64(IEnumerable<int2> path) : base(path) { }
+    public PathI() : base() { }
+    public PathI(int capacity = 0) : base(capacity) { }
+    public PathI(IEnumerable<int2> path) : base(path) { }
     public override string ToString()
     {
       return string.Join(", ", this);
     }
   }
 
-  public class Paths64 : List<Path64>
+  public class PathsI : List<PathI>
   {
-    public Paths64() : base() { }
-    public Paths64(int capacity = 0) : base(capacity) { }
-    public Paths64(IEnumerable<Path64> paths) : base(paths) { }
+    public PathsI() : base() { }
+    public PathsI(int capacity = 0) : base(capacity) { }
+    public PathsI(IEnumerable<PathI> paths) : base(paths) { }
     public override string ToString()
     {
       return string.Join(Environment.NewLine, this);
     }
   }
 
-  public class PathD : List<float2>
+  public class PathF : List<float2>
   {
-    public PathD() : base() { }
-    public PathD(int capacity = 0) : base(capacity) { }
-    public PathD(IEnumerable<float2> path) : base(path) { }
+    public PathF() : base() { }
+    public PathF(int capacity = 0) : base(capacity) { }
+    public PathF(IEnumerable<float2> path) : base(path) { }
     public override string ToString()
       => string.Join(", ", this);
   }
 
-  public class PathsD : List<PathD>
+  public class PathsF : List<PathF>
   {
-    public PathsD() : base() { }
-    public PathsD(int capacity = 0) : base(capacity) { }
-    public PathsD(IEnumerable<PathD> paths) : base(paths) { }
+    public PathsF() : base() { }
+    public PathsF(int capacity = 0) : base(capacity) { }
+    public PathsF(IEnumerable<PathF> paths) : base(paths) { }
     public override string ToString()
       => string.Join(Environment.NewLine, this);
   }
@@ -270,7 +270,7 @@ namespace Clipper
       }
     }
 
-    public static int4 GetBounds(Path64 path)
+    public static int4 GetBounds(PathI path)
     {
       if (path.Count == 0) return new int4();
       int4 result = Clipper.InvalidRectI;
@@ -300,7 +300,7 @@ namespace Clipper
       );
     }
 
-    public static PointInPolygonResult PointInPolygon(int2 pt, Path64 polygon)
+    public static PointInPolygonResult PointInPolygon(int2 pt, PathI polygon)
     {
       int len = polygon.Count, start = 0;
       if (len < 3) return PointInPolygonResult.IsOutside;
@@ -373,7 +373,7 @@ namespace Clipper
       return val == 0 ? PointInPolygonResult.IsOutside : PointInPolygonResult.IsInside;
     }
 
-    public static bool Path2ContainsPath1(Path64 path1, Path64 path2)
+    public static bool Path2ContainsPath1(PathI path1, PathI path2)
     {
       // we need to make some accommodation for rounding errors
       // so we won't jump if the first vertex is found outside
