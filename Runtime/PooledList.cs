@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 
-namespace Clipper2Lib
+namespace Clipper
 {
   /// <summary>
   /// A pool of reusable Vertex objects

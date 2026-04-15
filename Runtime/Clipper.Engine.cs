@@ -16,7 +16,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 
-namespace Clipper2Lib
+namespace Clipper
 {
 
   // Vertex: a pre-clipping data structure. It is used to separate polygons

@@ -1,8 +1,9 @@
-using Clipper2Lib;
+using Clipper;
+using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 
-namespace ClipperLib.Benchmark
+namespace Clipper.Benchmark
 {
 	public class ClipperBenchmark : MonoBehaviour
 	{
@@ -27,7 +28,7 @@ namespace ClipperLib.Benchmark
 				circleOffset = circleOffset * .5f + .5f;
 				circleRadius = circleRadius * .4f + .5f;
 
-				var circle = Clipper.Ellipse(d * circleOffset, circleRadius, circleRadius, circleSegmentsCount);
+				var circle = Clipper.Ellipse(d * circleOffset, circleRadius, circleSegmentsCount);
 
 				var pathType = (i & 1) == 0 ? PathType.Subject : PathType.Clip;
 				clipper.AddPath(circle, pathType);

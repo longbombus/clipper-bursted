@@ -1,6 +1,6 @@
 using NUnit.Framework;
 
-namespace Clipper2Lib.UnitTests
+namespace Clipper.Tests
 {
   public class TestOffsets
   {

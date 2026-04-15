@@ -1,4 +1,4 @@
-namespace Clipper2Lib.UnitTests
+namespace Clipper.Tests
 {
 	public static class TestFileUtility
 	{
@@ -10,7 +10,10 @@ namespace Clipper2Lib.UnitTests
 			if (filePath == null)
 			{
 				var packageInfo = UnityEditor.PackageManager.PackageInfo.FindForPackageName(PackageName);
-				filePath = packageInfo.assetPath;
+				if (packageInfo == null)
+					filePath = "Assets/clipper-bursted";
+				else
+					filePath = packageInfo.assetPath;
 			}
 
 			return System.IO.Path.Combine(filePath, filename);

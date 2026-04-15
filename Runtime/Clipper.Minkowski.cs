@@ -11,7 +11,7 @@
 using System;
 using Unity.Mathematics;
 
-namespace Clipper2Lib
+namespace Clipper
 {
   public static class Minkowski
   {

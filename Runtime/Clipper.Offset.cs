@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 
-namespace Clipper2Lib
+namespace Clipper
 {
   public enum JoinType
   {
@@ -611,7 +611,7 @@ namespace Clipper2Lib
             if (group.endType == EndType.Round)
             {
               int steps = (int) Math.Ceiling(_stepsPerRad * 2 * Math.PI);
-              pathOut = Clipper.Ellipse(pt, absDelta, absDelta, steps);
+              pathOut = Clipper.Ellipse(pt, (int2)absDelta, steps);
             }
             else
             {

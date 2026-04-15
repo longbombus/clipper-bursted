@@ -12,7 +12,7 @@ using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
 
-namespace Clipper2Lib
+namespace Clipper
 {
   public enum TriangulateResult { success, fail, noPolygons, pathsIntersect }
 

@@ -9,13 +9,11 @@
 using System;
 using System.IO;
 using System.Diagnostics;
-using Clipper2Lib.UnitTests;
 using Unity.Mathematics;
 using Debug = UnityEngine.Debug;
 
-namespace Clipper2Lib
+namespace Clipper.Tests
 {
-
   public static class ClipperFileIO
   {
     public static Paths64 PathFromStr(string? s)

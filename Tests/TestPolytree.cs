@@ -1,10 +1,10 @@
 using System;
 using System.Linq;
 using NUnit.Framework;
-using Clipper2Lib;
+using Clipper;
 using Unity.Mathematics;
 
-namespace Tests1.Tests
+namespace Clipper.Tests
 {
   public class TestPolytree
   {

@@ -18,7 +18,7 @@ using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Mathematics;
 
-namespace Clipper2Lib
+namespace Clipper
 {
   public static class Clipper
   {
@@ -1066,61 +1066,107 @@ namespace Clipper2Lib
 
     public static Path64 Ellipse(
       int2 center,
-      float radiusX,
-      float radiusY = 0,
-      int segmentsCunt = 0
+      int2 radius,
+      int segmentsCount = 0
     )
     {
-      if (radiusX <= 0) return new Path64();
-      if (radiusY <= 0) radiusY = radiusX;
-      if (segmentsCunt <= 2)
-        segmentsCunt = (int) math.ceil(math.PI * math.sqrt((radiusX + radiusY) / 2));
-
-      float2 radius = new float2(radiusX, radiusY);
-
-      math.sincos(math.TAU / segmentsCunt, out float si, out float co);
-      float2 d = new float2(co, si);
-      Path64 result = new Path64(segmentsCunt) { new int2((int)(center.x + radiusX), center.y) };
-      for (int i = 1; i < segmentsCunt; ++i)
-      {
-        result.Add((int2)math.round(center + radius * d));
-        float x = d.x * co - d.y * si;
-        d.y = d.y * co + d.x * si;
-        d.x = x;
-      }
-      return result;
+      var result = new int2[segmentsCount];
+      FillEllipse(center, radius, result);
+      return new Path64(result);
     }
 
-    public static NativeList<float2> Ellipse(
+    public static PathD Ellipse(
       float2 center,
-      float radius,
+      float2 radius,
+      int segmentsCount = 0
+    )
+    {
+      var result = new float2[segmentsCount];
+      FillEllipse(center, radius, result);
+      return new PathD(result);
+    }
+
+    public static NativeArray<float2> CreateEllipseArray(
+      float2 center,
+      float2 radius,
       float segmentsDensity,
       Allocator allocator = Allocator.Temp
     )
     {
-      var segmentsCount = (int)(segmentsDensity * math.sqrt(radius) + 3);
-      return Ellipse(center, new float2(radius), segmentsCount);
+      var result = new NativeArray<float2>(GetEllipseSegmentsCount(radius, segmentsDensity), allocator, NativeArrayOptions.UninitializedMemory);
+      FillEllipse(center, radius, result);
+      return result;
     }
 
-    public static NativeList<float2> Ellipse(
-      float2 center,
-      float2 radius,
-      int segmentsCount,
+    public static NativeArray<int2> CreateEllipseArray(
+      int2 center,
+      int2 radius,
+      float segmentsDensity,
       Allocator allocator = Allocator.Temp
     )
     {
-      float2 sc;
-      math.sincos(math.TAU / segmentsCount, out sc.x, out sc.y);
-      var result = new NativeList<float2>(segmentsCount, allocator) { new float2(center.x + radius.x, center.y) };
-      float2 d = new float2(sc.y, sc.x);
-      for (int i = 1; i < segmentsCount; ++i)
-      {
-        result.Add(math.mad(d, radius, center));
-        float x = d.x * sc.y - d.y * sc.x;
-        d.y = math.dot(d, sc);
-        d.x = x;
-      }
+      var result = new NativeArray<int2>(GetEllipseSegmentsCount(radius, segmentsDensity), allocator, NativeArrayOptions.UninitializedMemory);
+      FillEllipse(center, radius, result);
       return result;
+    }
+
+    private static int GetEllipseSegmentsCount(float2 radius, float segmentsDensity)
+      => (int)(segmentsDensity * math.sqrt((radius.x + radius.y) * .5f) + 3);
+
+    public static void FillEllipse(float2 center, float2 radius, Span<float2> result)
+    {
+      result[0] = new float2(center.x + radius.x, center.y);
+      math.sincos(math.TAU / result.Length, out var s, out var c);
+      float2x2 rot = new float2x2(c, -s, s, c);
+      float2 d = new float2(c, s);
+      for (int i = 1; i < result.Length; ++i)
+      {
+        result[i] = math.mad(d, radius, center);
+        d = math.mul(rot, d);
+      }
+    }
+
+    public static void FillEllipse(int2 center, int2 radius, Span<int2> result)
+    {
+      result[0] = new int2(center.x + radius.x, center.y);
+      math.sincos(math.TAU / result.Length, out var s, out var c);
+      float2x2 rot = new float2x2(c, -s, s, c);
+      float2 d = new float2(c, s);
+      for (int i = 1; i < result.Length; ++i)
+      {
+        result[i] = (int2)math.round(math.mad(d, radius, center));
+        d = math.mul(rot, d);
+      }
+    }
+
+    public static void FillEllipse(float2 center, float2 radius, NativeArray<float2> result)
+    {
+      result[0] = new float2(center.x + radius.x, center.y);
+      math.sincos(math.TAU / result.Length, out var s, out var c);
+      float2x2 rot = new float2x2(c, -s, s, c);
+      float2 d = new float2(c, s);
+      for (int i = 1; i < result.Length; ++i)
+      {
+        result[i] = math.mad(d, radius, center);
+        d = math.mul(rot, d);
+      }
+    }
+
+    public static void FillEllipse(
+      int2 center,
+      int2 radius,
+      NativeArray<int2> result
+    )
+    {
+      result[0] = new int2(center.x + radius.x, center.y);
+      math.sincos(math.TAU / result.Length, out var s, out var c);
+      float2x2 rot = new float2x2(c, -s, s, c);
+      float2 d = new float2(c, s);
+      for (int i = 1; i < result.Length; ++i)
+      {
+        result[i] = (int2)math.round(math.mad(d, radius, center));
+        d = math.mul(rot, d);
+      }
     }
 
     private static void ShowPolyPathStructure(PolyPath64 pp, int level)

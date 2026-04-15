@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using Unity.Mathematics;
 
-namespace Clipper2Lib
+namespace Clipper
 {
 	public static class VectorUtility
 	{
