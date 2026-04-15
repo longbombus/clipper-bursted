@@ -1260,25 +1260,36 @@ namespace Clipper
       foreach (PolyPathD child in polytree) { ShowPolyPathStructure(child, 1); }
     }
 
-    public static TriangulateResult Triangulate(PathsI pp, out PathsI solution, bool useDelaunay = true)
+    public static TriangulateResult Triangulate(PathsI pp, Allocator allocator, out Unity.Collections.NativeList<int> triangleIndices, bool useDelaunay = true)
     {
       Delaunay d = new Delaunay(useDelaunay);
-      return d.Execute(pp, out solution);
+      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      for (int i = 0; i < pp.Count; i++)
+      {
+        foreach (var pt in pp[i]) sl.AddItem(pt);
+        sl.AddSlice();
+      }
+      var res = d.Execute(sl, allocator, out triangleIndices);
+      sl.Dispose();
+      return res;
     }
 
-    public static TriangulateResult Triangulate(PathsF pp, int decPlaces, out PathsF solution, bool useDelaunay = true)
+    public static TriangulateResult Triangulate(PathsF pp, int decPlaces, Allocator allocator, out Unity.Collections.NativeList<int> triangleIndices, bool useDelaunay = true)
     {
       float scale = decPlaces <= 0 ? 1f : math.exp10(math.min(decPlaces, 8));
 
       PathsI pp64 = ScalePaths64(pp, scale);
 
       Delaunay d = new Delaunay(useDelaunay);
-      TriangulateResult result = d.Execute(pp64, out PathsI sol64);
-      if (result == TriangulateResult.success)
-        solution = ScalePathsD(sol64, 1f / scale);
-      else
-        solution = new PathsF();
-      return result;
+      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      for (int i = 0; i < pp64.Count; i++)
+      {
+        foreach (var pt in pp64[i]) sl.AddItem(pt);
+        sl.AddSlice();
+      }
+      var res = d.Execute(sl, allocator, out triangleIndices);
+      sl.Dispose();
+      return res;
     }
 
   } // Clipper

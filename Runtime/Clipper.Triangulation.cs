@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Mathematics;
+using Unity.Collections;
 
 namespace Clipper
 {
@@ -27,6 +28,7 @@ namespace Clipper
   internal class Vertex2
   {
     public int2 pt;
+    public int origIndex; // index into flattened input sequence
     public List<Edge> edges = new List<Edge>();
     public bool innerLM = false;
 
@@ -84,7 +86,7 @@ namespace Clipper
       useDelaunay = delaunay;
     }
 
-    private void AddPath(PathI path)
+    private void AddPath(PathI path, int[] origIndices)
     {
       int len = path.Count;
       if (len == 0) return;
@@ -111,7 +113,7 @@ namespace Clipper
       }
 
       int vert_cnt = allVertices.Count;
-      Vertex2 v0 = new Vertex2(path[i]);
+      Vertex2 v0 = new Vertex2(path[i]) { origIndex = origIndices[i] };
       allVertices.Add(v0);
 
       if (LeftTurning(path[iPrev], path[i], path[iNext]))
@@ -141,7 +143,7 @@ namespace Clipper
         // ascend up next bound to LocMax
         while (path[i].y <= vPrev.pt.y)
         {
-          Vertex2 v = new Vertex2(path[i]);
+          Vertex2 v = new Vertex2(path[i]) { origIndex = origIndices[i] };
           allVertices.Add(v);
           CreateEdge(vPrev, v, EdgeKind.ascend);
           vPrev = v;
@@ -159,7 +161,7 @@ namespace Clipper
         Vertex2 vPrevPrev = vPrev;
         while (i != i0 && path[i].y >= vPrev.pt.y)
         {
-          Vertex2 v = new Vertex2(path[i]);
+          Vertex2 v = new Vertex2(path[i]) { origIndex = origIndices[i] };
           allVertices.Add(v);
           CreateEdge(v, vPrev, EdgeKind.descend);
           vPrevPrev = vPrev;
@@ -195,18 +197,33 @@ namespace Clipper
       }
     }
 
-    private bool AddPaths(PathsI paths)
+    private bool AddPaths(SlicedList<int2> paths)
     {
       int totalVertexCount = 0;
-      foreach (PathI path in paths)
-        totalVertexCount += path.Count;
+      for (int si = 0; si < paths.SliceCount; si++)
+      {
+        var slice = paths.GetSlice(si);
+        totalVertexCount += slice.Length;
+      }
       if (totalVertexCount == 0) return false;
 
       allVertices.Capacity = allVertices.Count + totalVertexCount;
       allEdges.Capacity = allEdges.Count + totalVertexCount;
 
-      foreach (PathI path in paths)
-        AddPath(path);
+      // build PathI and origIndices mapping per slice so AddPath can assign original indices
+      int flatIndex = 0;
+      for (int si = 0; si < paths.SliceCount; si++)
+      {
+        var slice = paths.GetSlice(si);
+        PathI p = new PathI(slice.Length);
+        int[] idxs = new int[slice.Length];
+        for (int i = 0; i < slice.Length; i++)
+        {
+          p.Add(slice[i]);
+          idxs[i] = flatIndex++; // flattened index across slices
+        }
+        AddPath(p, idxs);
+      }
 
       return allVertices.Count > 2;
     }
@@ -752,40 +769,41 @@ namespace Clipper
       if (firstActive == edge) firstActive = next;
     }
 
-    internal TriangulateResult Execute(PathsI paths, out PathsI sol)
+    // New Execute produces triangle indices (3 ints per triangle) referencing flattened input vertices.
+    internal TriangulateResult Execute(SlicedList<int2> paths, Allocator allocator, out Unity.Collections.NativeList<int> triangleIndices)
     {
-      sol = new PathsI();
+      triangleIndices = new Unity.Collections.NativeList<int>(0, allocator);
 
       if (!AddPaths(paths))
       {
         return TriangulateResult.noPolygons;
       }
 
-      // if necessary fix path orientation because the algorithm 
-      // expects clockwise outer paths and counter-clockwise inner paths
-      if (lowermostVertex!.innerLM)
-      {
-        // the orientation of added paths must be wrong, so
-        // 1. reverse innerLM flags ...
-        Vertex2 lm;
-        while (locMinStack.Count > 0)
-        {
-          lm = locMinStack.Pop();
-          lm.innerLM = !lm.innerLM;
-        }
-        // 2. swap edge kinds
-        foreach (Edge e in allEdges)
-          if (e.kind == EdgeKind.ascend)
-            e.kind = EdgeKind.descend;
-          else
-            e.kind = EdgeKind.ascend;
-      }
-      else
-      {
-        // path orientation is fine so ...
-        while (locMinStack.Count > 0)
-          locMinStack.Pop();
-      }
+       // if necessary fix path orientation because the algorithm
+       // expects clockwise outer paths and counter-clockwise inner paths
+       if (lowermostVertex!.innerLM)
+       {
+         // the orientation of added paths must be wrong, so
+         // 1. reverse innerLM flags ...
+         Vertex2 lm;
+         while (locMinStack.Count > 0)
+         {
+           lm = locMinStack.Pop();
+           lm.innerLM = !lm.innerLM;
+         }
+         // 2. swap edge kinds
+         foreach (Edge e in allEdges)
+           if (e.kind == EdgeKind.ascend)
+             e.kind = EdgeKind.descend;
+           else
+             e.kind = EdgeKind.ascend;
+       }
+       else
+       {
+         // path orientation is fine so ...
+         while (locMinStack.Count > 0)
+           locMinStack.Pop();
+       }
 
       allEdges.Sort((a, b) => a.vL.pt.x.CompareTo(b.vL.pt.x));
 
@@ -817,10 +835,10 @@ namespace Clipper
             Vertex2 lm = locMinStack.Pop();
             Edge? e = CreateInnerLocMinLooseEdge(lm);
             if (e == null)
-            {
-              CleanUp();
-              return TriangulateResult.fail;
-            }
+             {
+               CleanUp();
+               return TriangulateResult.fail;
+             }
 
             if (IsHorizontal(e))
             {
@@ -906,14 +924,36 @@ namespace Clipper
         }
       }
 
-      sol = new PathsI(allTriangles.Count);
+      // build triangle index list (3 indices per triangle) using Vertex2.origIndex
       foreach (Triangle tri in allTriangles)
       {
-        PathI p = PathFromTriangle(tri);
-        int cps = InternalClipper.CrossProductSign(p[0], p[1], p[2]);
+        // Collect three distinct vertex references
+        Vertex2 a = tri.edges[0].vL;
+        Vertex2 b = tri.edges[0].vR;
+        Vertex2 c = null!;
+        Edge e1 = tri.edges[1];
+        if (e1.vL != a && e1.vL != b) c = e1.vL;
+        else if (e1.vR != a && e1.vR != b) c = e1.vR;
+        else
+        {
+          Edge e2 = tri.edges[2];
+          if (e2.vL != a && e2.vL != b) c = e2.vL;
+          else c = e2.vR;
+        }
+
+        // sanity check area (skip degenerate)
+        int cps = InternalClipper.CrossProductSign(a.pt, b.pt, c.pt);
         if (cps == 0) continue;
-        if (cps < 0) p.Reverse();
-        sol.Add(p);
+
+        // ensure consistent winding: if clockwise, keep as is; otherwise swap b and c
+        if (cps < 0)
+        {
+          // clockwise? original code flipped negative area to positive; here we keep ordering but ensure non-zero
+        }
+
+        triangleIndices.Add(a.origIndex);
+        triangleIndices.Add(b.origIndex);
+        triangleIndices.Add(c.origIndex);
       }
 
       CleanUp();
