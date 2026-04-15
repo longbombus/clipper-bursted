@@ -106,7 +106,7 @@ namespace Clipper2Lib
     public bool ReverseSolution { get; set; }
 
     public delegate float DeltaCallback64(Path64 path, PathD path_norms, int currPt, int prevPt);
-    public DeltaCallback64? DeltaCallback { get; set; }
+    public DeltaCallback64 DeltaCallback { get; set; }
 
     public ClipperOffset(
       float miterLimit = 2f,
