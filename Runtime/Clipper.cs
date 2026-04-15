@@ -192,7 +192,15 @@ namespace Clipper
     {
       if (rect.IsEmpty() || paths.Count == 0) return new PathsI();
       RectClip64 rc = new RectClip64(rect);
-      return rc.Execute(paths);
+      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      for (int i = 0; i < paths.Count; i++)
+      {
+        foreach (var pt in paths[i]) sl.AddItem(pt);
+        sl.AddSlice();
+      }
+      PathsI res = rc.Execute(sl);
+      sl.Dispose();
+      return res;
     }
 
     public static PathsI RectClip(int4 rect, PathI path)
@@ -209,7 +217,14 @@ namespace Clipper
       int4 r = ScaleRect(rect, scale);
       PathsI tmpPath = ScalePaths64(paths, scale);
       RectClip64 rc = new RectClip64(r);
-      tmpPath = rc.Execute(tmpPath);
+      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      for (int i = 0; i < tmpPath.Count; i++)
+      {
+        foreach (var pt in tmpPath[i]) sl.AddItem(pt);
+        sl.AddSlice();
+      }
+      tmpPath = rc.Execute(sl);
+      sl.Dispose();
       return ScalePathsD(tmpPath, 1 / scale);
     }
 
@@ -223,7 +238,15 @@ namespace Clipper
     {
       if (rect.IsEmpty() || paths.Count == 0) return new PathsI();
       RectClipLines64 rc = new RectClipLines64(rect);
-      return rc.Execute(paths);
+      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      for (int i = 0; i < paths.Count; i++)
+      {
+        foreach (var pt in paths[i]) sl.AddItem(pt);
+        sl.AddSlice();
+      }
+      PathsI res = rc.Execute(sl);
+      sl.Dispose();
+      return res;
     }
 
     public static PathsI RectClipLines(int4 rect, PathI path)
@@ -241,7 +264,14 @@ namespace Clipper
       int4 r = ScaleRect(rect, scale);
       PathsI tmpPath = ScalePaths64(paths, scale);
       RectClipLines64 rc = new RectClipLines64(r);
-      tmpPath = rc.Execute(tmpPath);
+      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      for (int i = 0; i < tmpPath.Count; i++)
+      {
+        foreach (var pt in tmpPath[i]) sl.AddItem(pt);
+        sl.AddSlice();
+      }
+      tmpPath = rc.Execute(sl);
+      sl.Dispose();
       return ScalePathsD(tmpPath, 1 / scale);
     }
     public static PathsF RectClipLines(float4 rect, PathF path, int precision = 2)

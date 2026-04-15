@@ -651,13 +651,16 @@ namespace Clipper
       }
     }
 
-    public PathsI Execute(PathsI paths)
+    public PathsI Execute(SlicedList<int2> paths)
     {
       PathsI result = new PathsI();
       if (rect_.IsEmpty()) return result;
-      foreach (PathI path in paths)
+      for (int si = 0; si < paths.SliceCount; si++)
       {
-        if (path.Count < 3) continue;
+        var slice = paths.GetSlice(si);
+        if (slice.Length < 3) continue;
+        PathI path = new PathI(slice.Length);
+        for (int i = 0; i < slice.Length; i++) path.Add(slice[i]);
         pathBounds_ = Clipper.GetBounds(path);
         if (!rect_.Intersects(pathBounds_))
           continue; // the path must be completely outside fRect
@@ -957,13 +960,16 @@ namespace Clipper
   {
     internal RectClipLines64(int4 rect) : base(rect) { }
 
-    public new PathsI Execute(PathsI paths)
+    public new PathsI Execute(SlicedList<int2> paths)
     {
       PathsI result = new PathsI();
       if (rect_.IsEmpty()) return result;
-      foreach (PathI path in paths)
+      for (int si = 0; si < paths.SliceCount; si++)
       {
-        if (path.Count < 2) continue;
+        var slice = paths.GetSlice(si);
+        if (slice.Length < 2) continue;
+        PathI path = new PathI(slice.Length);
+        for (int i = 0; i < slice.Length; i++) path.Add(slice[i]);
         pathBounds_ = Clipper.GetBounds(path);
         if (!rect_.Intersects(pathBounds_))
           continue; // the path must be completely outside fRect
