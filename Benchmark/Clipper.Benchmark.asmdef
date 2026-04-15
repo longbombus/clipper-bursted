@@ -1,0 +1,16 @@
+{
+    "name": "Clipper.Benchmark",
+    "rootNamespace": "",
+    "references": [
+        "GUID:4e2c0dd9844344f51adcf6ae315bf32c"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
