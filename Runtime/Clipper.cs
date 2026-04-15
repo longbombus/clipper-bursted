@@ -144,10 +144,20 @@ namespace Clipper
       float arcTolerance = 0f
     )
     {
-      ClipperOffset co = new ClipperOffset(miterLimit, arcTolerance);
-      co.AddPaths(paths, joinType, endType);
+      // build SlicedList from PathsI using Temp allocator
+      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      for (int i = 0; i < paths.Count; i++)
+      {
+        foreach (var pt in paths[i]) sl.AddItem(pt);
+        sl.AddSlice();
+      }
+      ClipperOffset co = new ClipperOffset(Allocator.Persistent, Allocator.Temp, miterLimit, arcTolerance);
+      co.AddPaths(sl, joinType, endType);
       PathsI solution = new PathsI();
       co.Execute(delta, solution);
+      // dispose temporary sliced list
+      sl.Dispose();
+      co.Dispose();
       return solution;
     }
 
@@ -163,9 +173,18 @@ namespace Clipper
     {
       float scale = InternalClipper.PrecisionToScale(precision);
       PathsI tmp = ScalePaths64(paths, scale);
-      ClipperOffset co = new ClipperOffset(miterLimit, scale * arcTolerance);
-      co.AddPaths(tmp, joinType, endType);
+      // convert tmp PathsI into SlicedList and run offset
+      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      for (int i = 0; i < tmp.Count; i++)
+      {
+        foreach (var pt in tmp[i]) sl.AddItem(pt);
+        sl.AddSlice();
+      }
+      ClipperOffset co = new ClipperOffset(Allocator.Persistent, Allocator.Temp, miterLimit, scale * arcTolerance);
+      co.AddPaths(sl, joinType, endType);
       co.Execute(delta * scale, tmp); // reuse 'tmp' to receive (scaled) solution
+      sl.Dispose();
+      co.Dispose();
       return ScalePathsD(tmp, 1 / scale);
     }
 

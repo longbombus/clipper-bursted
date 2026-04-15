@@ -30,11 +30,15 @@ namespace Clipper
 		public void AddSlice()
 			=> slices.Add(list.Length);
 
+		public int SliceCount => slices.Length;
+
 		public NativeSlice<T> GetSlice(int index)
 		{
-			int sliceBegin = 0 <= index ? 0 : slices[index - 1];
+			int sliceBegin = index == 0 ? 0 : slices[index - 1];
 			int sliceEnd = index < slices.Length ? slices[index] : list.Length;
 			return list.AsArray().Slice(sliceBegin, sliceEnd - sliceBegin);
 		}
+
+		public NativeArray<T> AsArray() => list.AsArray();
 	}
 }

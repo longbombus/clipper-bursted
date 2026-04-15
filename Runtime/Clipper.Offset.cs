@@ -1,4 +1,10 @@
-﻿/*******************************************************************************
+﻿using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using Unity.Mathematics;
+using Unity.Collections;
+
+/*******************************************************************************
 * Author    :  Angus Johnson                                                   *
 * Date      :  11 October 2025                                                 *
 * Website   :  https://www.angusj.com                                          *
@@ -6,11 +12,6 @@
 * Purpose   :  Path Offset (Inflate/Shrink)                                    *
 * License   :  https://www.boost.org/LICENSE_1_0.txt                           *
 *******************************************************************************/
-
-using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using Unity.Mathematics;
 
 namespace Clipper
 {
@@ -36,29 +37,35 @@ namespace Clipper
 
     private class Group
     {
-      internal PathsI inPaths;
+      internal SlicedList<int2> inPaths;
       internal JoinType joinType;
       internal EndType endType;
       internal bool pathsReversed;
       internal int lowestPathIdx;
 
-      public Group(PathsI paths, JoinType joinType, EndType endType = EndType.Polygon)
+      public Group(SlicedList<int2> paths, JoinType joinType, EndType endType = EndType.Polygon, Allocator allocatorFields = Allocator.Temp)
       {
         this.joinType = joinType;
         this.endType = endType;
 
         bool isJoined = ((endType == EndType.Polygon) || (endType == EndType.Joined));
-        inPaths = new PathsI(paths.Count);
-        foreach(PathI path in paths)
-          inPaths.Add(Clipper.StripDuplicates(path, isJoined));
+        inPaths = new SlicedList<int2>(allocatorFields);
+        // copy and strip duplicates per path
+        for (int si = 0; si < paths.SliceCount; si++)
+        {
+          var slice = paths.GetSlice(si);
+          PathI tmp = new PathI(slice.Length);
+          for (int i = 0; i < slice.Length; i++) tmp.Add(slice[i]);
+          tmp = Clipper.StripDuplicates(tmp, isJoined);
+          // append tmp to inPaths
+          foreach (int2 pt in tmp) inPaths.AddItem(pt);
+          inPaths.AddSlice();
+        }
 
         if (endType == EndType.Polygon)
         {
           bool isNegArea;
-          GetLowestPathInfo(inPaths, out lowestPathIdx, out isNegArea);
-          // the lowermost path must be an outer path, so if its orientation is negative,
-          // then flag that the whole group is 'reversed' (will negate delta etc.)
-          // as this is much more efficient than reversing every path.
+          GetLowestPathInfo(convertPathsI(inPaths), out lowestPathIdx, out isNegArea);
           pathsReversed = (lowestPathIdx >= 0) && isNegArea;
         }
         else
@@ -91,6 +98,9 @@ namespace Clipper
     private PathsI _solution = new PathsI();
     private PolyTree64? _solutionTree;
 
+    private readonly Allocator _allocatorFields;
+    private readonly Allocator _allocatorTemp;
+
     private float _groupDelta; //*0.5 for open paths; *-1.0 for negative areas
     private float _delta;
     private float _mitLimSqr;
@@ -108,44 +118,77 @@ namespace Clipper
     public delegate float DeltaCallback64(PathI path, PathF path_norms, int currPt, int prevPt);
     public DeltaCallback64 DeltaCallback { get; set; }
 
-    public ClipperOffset(
+    public ClipperOffset(Allocator allocatorFields, Allocator allocatorTemp,
       float miterLimit = 2f,
       float arcTolerance = 0f,
       bool preserveCollinear = false,
       bool reverseSolution = false
     )
     {
+      _allocatorFields = allocatorFields;
+      _allocatorTemp = allocatorTemp;
       MiterLimit = miterLimit;
       ArcTolerance = arcTolerance;
       MergeGroups = true;
       PreserveCollinear = preserveCollinear;
       ReverseSolution = reverseSolution;
     }
+
+    public void Dispose()
+    {
+      // dispose groups inPaths
+      foreach (var g in _groupList)
+      {
+        g.inPaths.Dispose();
+      }
+      _solution = new PathsI();
+    }
+
     public void Clear()
     {
+      // dispose any existing group inPaths
+      foreach (var g in _groupList)
+        g.inPaths.Dispose();
       _groupList.Clear();
     }
 
-    public void AddPath(PathI path, JoinType joinType, EndType endType)
+    public void AddPath(NativeArray<int2> path, JoinType joinType, EndType endType)
     {
-      int cnt = path.Count;
+      int cnt = path.Length;
       if (cnt == 0) return;
-      PathsI pp = new PathsI(1) { path };
-      AddPaths(pp, joinType, endType);
+      SlicedList<int2> sl = new SlicedList<int2>(_allocatorTemp);
+      for (int i = 0; i < cnt; i++) sl.AddItem(path[i]);
+      sl.AddSlice();
+      _groupList.Add(new Group(sl, joinType, endType, _allocatorFields));
+      // temp sl disposed inside Group copy? Dispose local sl
+      sl.Dispose();
     }
 
-    public void AddPaths(PathsI paths, JoinType joinType, EndType endType)
+    public void AddPaths(SlicedList<int2> paths, JoinType joinType, EndType endType)
     {
-      int cnt = paths.Count;
-      if (cnt == 0) return;
-      _groupList.Add(new Group(paths, joinType, endType));
+      if (paths.SliceCount == 0) return;
+      _groupList.Add(new Group(paths, joinType, endType, _allocatorFields));
+    }
+
+    // helper to convert SlicedList<int2> to PathsI for existing routines
+    private static PathsI convertPathsI(SlicedList<int2> s)
+    {
+      PathsI res = new PathsI(s.SliceCount);
+      for (int si = 0; si < s.SliceCount; si++)
+      {
+        var slice = s.GetSlice(si);
+        PathI p = new PathI(slice.Length);
+        for (int i = 0; i < slice.Length; i++) p.Add(slice[i]);
+        res.Add(p);
+      }
+      return res;
     }
 
     private int CalcSolutionCapacity()
     {
       int result = 0;
       foreach (Group g in _groupList)
-        result += (g.endType == EndType.Joined) ? g.inPaths.Count * 2 : g.inPaths.Count;
+        result += (g.endType == EndType.Joined) ? g.inPaths.SliceCount * 2 : g.inPaths.SliceCount;
       return result;
     }
 
@@ -170,8 +213,11 @@ namespace Clipper
       if (Math.Abs(delta) < 0.5)
       {
         foreach (Group group in _groupList)
-          foreach (PathI path in group.inPaths)
+        {
+          PathsI tmp = convertPathsI(group.inPaths);
+          foreach (PathI path in tmp)
             _solution.Add(path);
+        }
         return;
       }
 
@@ -447,7 +493,7 @@ namespace Clipper
         // by far the simplest way to construct concave joins, especially those joining very 
         // short segments, is to insert 3 points that produce negative regions. These regions 
         // will be removed later by the finishing union operation. This is also the best way 
-        // to ensure that path reversals (ie over-shrunk paths) are removed.
+        // to ensure that path reversals (ie over-spaced paths) are removed.
         pathOut.Add(GetPerpendic(path[j], _normals[k]));
         pathOut.Add(path[j]); // (#405, #873, #916)
         pathOut.Add(GetPerpendic(path[j], _normals[j]));
@@ -586,10 +632,12 @@ namespace Clipper
         _stepsPerRad = stepsPer360 / math.TAU;
       }
 
-      using List<PathI>.Enumerator pathIt = group.inPaths.GetEnumerator();
-      while (pathIt.MoveNext())
+      // iterate slices in group's inPaths
+      for (int spi = 0; spi < group.inPaths.SliceCount; spi++)
       {
-        PathI p = pathIt.Current!;
+        var slice = group.inPaths.GetSlice(spi);
+        PathI p = new PathI(slice.Length);
+        for (int i = 0; i < slice.Length; i++) p.Add(slice[i]);
 
         pathOut = new PathI();
         int cnt = p.Count;
