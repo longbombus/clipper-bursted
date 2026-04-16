@@ -23,13 +23,13 @@ namespace Clipper.Tests
       var sl = Minkowski.Sum(patArr, pathArr, true, Allocator.Temp);
 
       // Expect non-empty result
-      Assert.IsTrue(sl.SliceCount > 0);
+      Assert.IsTrue(sl.SlicesCount > 0);
 
       // Convert to PathsI to compute area
-      PathsI outPaths = new PathsI(sl.SliceCount);
-      for (int si = 0; si < sl.SliceCount; ++si)
+      PathsI outPaths = new PathsI(sl.SlicesCount);
+      for (int si = 0; si < sl.SlicesCount; ++si)
       {
-        var slice = sl.GetSlice(si);
+        var slice = sl[si];
         PathI p = new PathI(slice.Length);
         for (int k = 0; k < slice.Length; ++k) p.Add(slice[k]);
         outPaths.Add(p);
@@ -72,8 +72,8 @@ namespace Clipper.Tests
       var slI = Minkowski.Sum(patArr, pathArr, true, Allocator.Temp);
 
       // Relaxed assertion: both should produce non-empty results
-      Assert.IsTrue(slF.SliceCount > 0);
-      Assert.IsTrue(slI.SliceCount > 0);
+      Assert.IsTrue(slF.SlicesCount > 0);
+      Assert.IsTrue(slI.SlicesCount > 0);
 
       slF.Dispose();
       slI.Dispose();
@@ -95,7 +95,7 @@ namespace Clipper.Tests
       for (int i = 0; i < path.Count; ++i) pathArr[i] = path[i];
 
       var sl = Minkowski.Diff(patArr, pathArr, true, Allocator.Temp);
-      Assert.IsTrue(sl.SliceCount >= 0); // diff may be empty, but call should not crash
+      Assert.IsTrue(sl.SlicesCount >= 0); // diff may be empty, but call should not crash
 
       sl.Dispose();
       patArr.Dispose();

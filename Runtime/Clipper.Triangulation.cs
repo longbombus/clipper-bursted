@@ -197,12 +197,12 @@ namespace Clipper
       }
     }
 
-    private bool AddPaths(SlicedList<int2> paths)
+    private bool AddPaths(NativeSlicedList<int2> paths)
     {
       int totalVertexCount = 0;
-      for (int si = 0; si < paths.SliceCount; si++)
+      for (int si = 0; si < paths.SlicesCount; si++)
       {
-        var slice = paths.GetSlice(si);
+        var slice = paths[si];
         totalVertexCount += slice.Length;
       }
       if (totalVertexCount == 0) return false;
@@ -212,9 +212,9 @@ namespace Clipper
 
       // build PathI and origIndices mapping per slice so AddPath can assign original indices
       int flatIndex = 0;
-      for (int si = 0; si < paths.SliceCount; si++)
+      for (int si = 0; si < paths.SlicesCount; si++)
       {
-        var slice = paths.GetSlice(si);
+        var slice = paths[si];
         PathI p = new PathI(slice.Length);
         int[] idxs = new int[slice.Length];
         for (int i = 0; i < slice.Length; i++)
@@ -770,7 +770,7 @@ namespace Clipper
     }
 
     // New Execute produces triangle indices (3 ints per triangle) referencing flattened input vertices.
-    internal TriangulateResult Execute(SlicedList<int2> paths, Allocator allocator, out Unity.Collections.NativeList<int> triangleIndices)
+    internal TriangulateResult Execute(NativeSlicedList<int2> paths, Allocator allocator, out Unity.Collections.NativeList<int> triangleIndices)
     {
       triangleIndices = new Unity.Collections.NativeList<int>(0, allocator);
 

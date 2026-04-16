@@ -37,29 +37,29 @@ namespace Clipper
 
     private class Group
     {
-      internal SlicedList<int2> inPaths;
+      internal NativeSlicedList<int2> inPaths;
       internal JoinType joinType;
       internal EndType endType;
       internal bool pathsReversed;
       internal int lowestPathIdx;
 
-      public Group(SlicedList<int2> paths, JoinType joinType, EndType endType = EndType.Polygon, Allocator allocatorFields = Allocator.Temp)
+      public Group(NativeSlicedList<int2> paths, JoinType joinType, EndType endType = EndType.Polygon, Allocator allocatorFields = Allocator.Temp)
       {
         this.joinType = joinType;
         this.endType = endType;
 
         bool isJoined = ((endType == EndType.Polygon) || (endType == EndType.Joined));
-        inPaths = new SlicedList<int2>(allocatorFields);
+        inPaths = new NativeSlicedList<int2>(allocatorFields);
         // copy and strip duplicates per path
-        for (int si = 0; si < paths.SliceCount; si++)
+        for (int si = 0; si < paths.SlicesCount; si++)
         {
-          var slice = paths.GetSlice(si);
+          var slice = paths[si];
           PathI tmp = new PathI(slice.Length);
           for (int i = 0; i < slice.Length; i++) tmp.Add(slice[i]);
           tmp = Clipper.StripDuplicates(tmp, isJoined);
           // append tmp to inPaths
-          foreach (int2 pt in tmp) inPaths.AddItem(pt);
-          inPaths.AddSlice();
+          foreach (int2 pt in tmp) inPaths.AddLastSliceItem(pt);
+          inPaths.FinishSlice();
         }
 
         if (endType == EndType.Polygon)
@@ -156,27 +156,27 @@ namespace Clipper
     {
       int cnt = path.Length;
       if (cnt == 0) return;
-      SlicedList<int2> sl = new SlicedList<int2>(_allocatorTemp);
-      for (int i = 0; i < cnt; i++) sl.AddItem(path[i]);
-      sl.AddSlice();
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(_allocatorTemp);
+      for (int i = 0; i < cnt; i++) sl.AddLastSliceItem(path[i]);
+      sl.FinishSlice();
       _groupList.Add(new Group(sl, joinType, endType, _allocatorFields));
       // temp sl disposed inside Group copy? Dispose local sl
       sl.Dispose();
     }
 
-    public void AddPaths(SlicedList<int2> paths, JoinType joinType, EndType endType)
+    public void AddPaths(NativeSlicedList<int2> paths, JoinType joinType, EndType endType)
     {
-      if (paths.SliceCount == 0) return;
+      if (paths.SlicesCount == 0) return;
       _groupList.Add(new Group(paths, joinType, endType, _allocatorFields));
     }
 
     // helper to convert SlicedList<int2> to PathsI for existing routines
-    private static PathsI convertPathsI(SlicedList<int2> s)
+    private static PathsI convertPathsI(NativeSlicedList<int2> s)
     {
-      PathsI res = new PathsI(s.SliceCount);
-      for (int si = 0; si < s.SliceCount; si++)
+      PathsI res = new PathsI(s.SlicesCount);
+      for (int si = 0; si < s.SlicesCount; si++)
       {
-        var slice = s.GetSlice(si);
+        var slice = s[si];
         PathI p = new PathI(slice.Length);
         for (int i = 0; i < slice.Length; i++) p.Add(slice[i]);
         res.Add(p);
@@ -188,7 +188,7 @@ namespace Clipper
     {
       int result = 0;
       foreach (Group g in _groupList)
-        result += (g.endType == EndType.Joined) ? g.inPaths.SliceCount * 2 : g.inPaths.SliceCount;
+        result += (g.endType == EndType.Joined) ? g.inPaths.SlicesCount * 2 : g.inPaths.SlicesCount;
       return result;
     }
 
@@ -215,7 +215,7 @@ namespace Clipper
         foreach (Group group in _groupList)
         {
           PathsI tmp = convertPathsI(group.inPaths);
-          foreach (PathI path in tmp)
+          foreach (var path in tmp)
             _solution.Add(path);
         }
         return;
@@ -633,9 +633,9 @@ namespace Clipper
       }
 
       // iterate slices in group's inPaths
-      for (int spi = 0; spi < group.inPaths.SliceCount; spi++)
+      for (int spi = 0; spi < group.inPaths.SlicesCount; spi++)
       {
-        var slice = group.inPaths.GetSlice(spi);
+        var slice = group.inPaths[spi];
         PathI p = new PathI(slice.Length);
         for (int i = 0; i < slice.Length; i++) p.Add(slice[i]);
 

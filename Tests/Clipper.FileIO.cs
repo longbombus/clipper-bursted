@@ -198,7 +198,7 @@ namespace Clipper.Tests
       if (subj != null && subj.Count > 0)
       {
         writer.Write("SUBJECTS\r\n");
-        foreach (PathI p in subj)
+        foreach (var p in subj)
         {
           foreach (int2 ip in p)
             writer.Write("{0},{1} ", ip.x, ip.y);
@@ -208,7 +208,7 @@ namespace Clipper.Tests
       if (subj_open != null && subj_open.Count > 0)
       {
         writer.Write("SUBJECTS_OPEN\r\n");
-        foreach (PathI p in subj_open)
+        foreach (var p in subj_open)
         {
           foreach (int2 ip in p)
             writer.Write("{0},{1} ", ip.x, ip.y);
@@ -218,7 +218,7 @@ namespace Clipper.Tests
       if (clip != null && clip.Count > 0)
       {
         writer.Write("CLIPS\r\n");
-        foreach (PathI p in clip)
+        foreach (var p in clip)
         {
           foreach (int2 ip in p)
             writer.Write(ip.ToString());
@@ -249,9 +249,9 @@ namespace Clipper.Tests
         return;
       }
       writer.Write(paths.Count);
-      foreach (PathI path in paths)
+      foreach (var path in paths)
       {
-        writer.Write(path.Count);
+        writer.Write(path.Length);
         foreach (int2 pt in path)
         {
           writer.Write(pt.x);
@@ -265,9 +265,9 @@ namespace Clipper.Tests
     public static PathsI AffineTranslatePaths(PathsI paths, int dx, int dy)
     {
       PathsI result = new PathsI(paths.Count);
-      foreach (PathI path in paths)
+      foreach (var path in paths)
       {
-        PathI p = new PathI(path.Count);
+        PathI p = new PathI(path.Length);
         foreach (int2 pt in path)
           p.Add(new int2(pt.x + dx, pt.y + dy));
         result.Add(p);

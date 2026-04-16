@@ -651,13 +651,13 @@ namespace Clipper
       }
     }
 
-    public PathsI Execute(SlicedList<int2> paths)
+    public PathsI Execute(NativeSlicedList<int2> paths)
     {
       PathsI result = new PathsI();
       if (rect_.IsEmpty()) return result;
-      for (int si = 0; si < paths.SliceCount; si++)
+      for (int si = 0; si < paths.SlicesCount; si++)
       {
-        var slice = paths.GetSlice(si);
+        var slice = paths[si];
         if (slice.Length < 3) continue;
         PathI path = new PathI(slice.Length);
         for (int i = 0; i < slice.Length; i++) path.Add(slice[i]);
@@ -960,13 +960,13 @@ namespace Clipper
   {
     internal RectClipLines64(int4 rect) : base(rect) { }
 
-    public new PathsI Execute(SlicedList<int2> paths)
+    public new PathsI Execute(NativeSlicedList<int2> paths)
     {
       PathsI result = new PathsI();
       if (rect_.IsEmpty()) return result;
-      for (int si = 0; si < paths.SliceCount; si++)
+      for (int si = 0; si < paths.SlicesCount; si++)
       {
-        var slice = paths.GetSlice(si);
+        var slice = paths[si];
         if (slice.Length < 2) continue;
         PathI path = new PathI(slice.Length);
         for (int i = 0; i < slice.Length; i++) path.Add(slice[i]);

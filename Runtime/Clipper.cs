@@ -14,6 +14,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -22,10 +23,10 @@ namespace Clipper
 {
   public static class Clipper
   {
-    private static int4 invalidRectI = new int4(false);
+    private static int4 invalidRectI = new int4(int.MaxValue);
     public static int4 InvalidRectI => invalidRectI;
 
-    private static float4 invalidRectF = new float4(false);
+    private static float4 invalidRectF = new float4(float.MaxValue);
     public static float4 InvalidRectF => invalidRectF;
 
     public static PathsI Intersect(PathsI subject, PathsI clip, FillRule fillRule)
@@ -145,11 +146,11 @@ namespace Clipper
     )
     {
       // build SlicedList from PathsI using Temp allocator
-      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(Allocator.Temp);
       for (int i = 0; i < paths.Count; i++)
       {
-        foreach (var pt in paths[i]) sl.AddItem(pt);
-        sl.AddSlice();
+        foreach (var pt in paths[i]) sl.AddLastSliceItem(pt);
+        sl.FinishSlice();
       }
       ClipperOffset co = new ClipperOffset(Allocator.Persistent, Allocator.Temp, miterLimit, arcTolerance);
       co.AddPaths(sl, joinType, endType);
@@ -174,11 +175,11 @@ namespace Clipper
       float scale = InternalClipper.PrecisionToScale(precision);
       PathsI tmp = ScalePaths64(paths, scale);
       // convert tmp PathsI into SlicedList and run offset
-      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(Allocator.Temp);
       for (int i = 0; i < tmp.Count; i++)
       {
-        foreach (var pt in tmp[i]) sl.AddItem(pt);
-        sl.AddSlice();
+        foreach (var pt in tmp[i]) sl.AddLastSliceItem(pt);
+        sl.FinishSlice();
       }
       ClipperOffset co = new ClipperOffset(Allocator.Persistent, Allocator.Temp, miterLimit, scale * arcTolerance);
       co.AddPaths(sl, joinType, endType);
@@ -192,11 +193,11 @@ namespace Clipper
     {
       if (rect.IsEmpty() || paths.Count == 0) return new PathsI();
       RectClip64 rc = new RectClip64(rect);
-      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(Allocator.Temp);
       for (int i = 0; i < paths.Count; i++)
       {
-        foreach (var pt in paths[i]) sl.AddItem(pt);
-        sl.AddSlice();
+        foreach (var pt in paths[i]) sl.AddLastSliceItem(pt);
+        sl.FinishSlice();
       }
       PathsI res = rc.Execute(sl);
       sl.Dispose();
@@ -217,11 +218,11 @@ namespace Clipper
       int4 r = ScaleRect(rect, scale);
       PathsI tmpPath = ScalePaths64(paths, scale);
       RectClip64 rc = new RectClip64(r);
-      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(Allocator.Temp);
       for (int i = 0; i < tmpPath.Count; i++)
       {
-        foreach (var pt in tmpPath[i]) sl.AddItem(pt);
-        sl.AddSlice();
+        foreach (var pt in tmpPath[i]) sl.AddLastSliceItem(pt);
+        sl.FinishSlice();
       }
       tmpPath = rc.Execute(sl);
       sl.Dispose();
@@ -238,11 +239,11 @@ namespace Clipper
     {
       if (rect.IsEmpty() || paths.Count == 0) return new PathsI();
       RectClipLines64 rc = new RectClipLines64(rect);
-      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(Allocator.Temp);
       for (int i = 0; i < paths.Count; i++)
       {
-        foreach (var pt in paths[i]) sl.AddItem(pt);
-        sl.AddSlice();
+        foreach (var pt in paths[i]) sl.AddLastSliceItem(pt);
+        sl.FinishSlice();
       }
       PathsI res = rc.Execute(sl);
       sl.Dispose();
@@ -264,11 +265,11 @@ namespace Clipper
       int4 r = ScaleRect(rect, scale);
       PathsI tmpPath = ScalePaths64(paths, scale);
       RectClipLines64 rc = new RectClipLines64(r);
-      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(Allocator.Temp);
       for (int i = 0; i < tmpPath.Count; i++)
       {
-        foreach (var pt in tmpPath[i]) sl.AddItem(pt);
-        sl.AddSlice();
+        foreach (var pt in tmpPath[i]) sl.AddLastSliceItem(pt);
+        sl.FinishSlice();
       }
       tmpPath = rc.Execute(sl);
       sl.Dispose();
@@ -290,10 +291,10 @@ namespace Clipper
       patArr.Dispose();
       pathArr.Dispose();
 
-      PathsI res = new PathsI(sl.SliceCount);
-      for (int si = 0; si < sl.SliceCount; ++si)
+      PathsI res = new PathsI(sl.SlicesCount);
+      for (int si = 0; si < sl.SlicesCount; ++si)
       {
-        var slice = sl.GetSlice(si);
+        var slice = sl[si];
         PathI p = new PathI(slice.Length);
         for (int k = 0; k < slice.Length; ++k) p.Add(slice[k]);
         res.Add(p);
@@ -321,10 +322,10 @@ namespace Clipper
       patArr.Dispose();
       pathArr.Dispose();
 
-      PathsI res = new PathsI(sl.SliceCount);
-      for (int si = 0; si < sl.SliceCount; ++si)
+      PathsI res = new PathsI(sl.SlicesCount);
+      for (int si = 0; si < sl.SlicesCount; ++si)
       {
-        var slice = sl.GetSlice(si);
+        var slice = sl[si];
         PathI p = new PathI(slice.Length);
         for (int k = 0; k < slice.Length; ++k) p.Add(slice[k]);
         res.Add(p);
@@ -361,7 +362,7 @@ namespace Clipper
     public static float Area(PathsI paths)
     {
       float a = 0f;
-      foreach (PathI path in paths)
+      foreach (var path in paths)
         a += Area(path);
       return a;
     }
@@ -381,10 +382,40 @@ namespace Clipper
       return a * 0.5f;
     }
 
+    public static float Area(NativeArray<int2> path)
+    {
+      if (path.Length < 3)
+        return 0f;
+
+      float a = 0f;
+      int2 prevPt = path[^1];
+      foreach (int2 pt in path)
+      {
+        a += (float)(prevPt.y + pt.y) * (prevPt.x - pt.x);
+        prevPt = pt;
+      }
+      return a * 0.5f;
+    }
+
+    public static float Area(NativeArray<float2> path)
+    {
+      if (path.Length < 3)
+        return 0f;
+
+      float a = 0f;
+      float2 prevPt = path[^1];
+      foreach (int2 pt in path)
+      {
+        a += (prevPt.y + pt.y) * (prevPt.x - pt.x);
+        prevPt = pt;
+      }
+      return a * 0.5f;
+    }
+
     public static double Area(PathsF paths)
     {
       double a = 0.0;
-      foreach (PathF path in paths)
+      foreach (var path in paths)
         a += Area(path);
       return a;
     }
@@ -401,34 +432,6 @@ namespace Clipper
       return Area(poly) >= 0;
     }
 
-    public static string Path64ToString(PathI path)
-    {
-      string result = "";
-      foreach (int2 pt in path)
-        result += pt.ToString();
-      return result + '\n';
-    }
-    public static string Paths64ToString(PathsI paths)
-    {
-      string result = "";
-      foreach (PathI path in paths)
-        result += Path64ToString(path);
-      return result;
-    }
-    public static string PathDToString(PathF path)
-    {
-      string result = "";
-      foreach (float2 pt in path)
-        result += pt.ToString();
-      return result + '\n';
-    }
-    public static string PathsDToString(PathsF paths)
-    {
-      string result = "";
-      foreach (PathF path in paths)
-        result += PathDToString(path);
-      return result;
-    }
     public static PathI OffsetPath(PathI path, int dx, int dy)
     {
       PathI result = new PathI(path.Count);
@@ -449,42 +452,6 @@ namespace Clipper
     public static int4 ScaleRect(float4 rec, float scale)
       => (int4)(rec * scale);
 
-    public static PathI ScalePath(PathI path, float scale)
-    {
-      if ((scale - 1).IsAlmostZero()) return path;
-      PathI result = new PathI(path.Count);
-      foreach (int2 pt in path)
-        result.Add((int2)((float2)pt * scale));
-      return result;
-    }
-
-    public static PathsI ScalePaths(PathsI paths, float scale)
-    {
-      if ((scale - 1).IsAlmostZero()) return paths;
-      PathsI result = new PathsI(paths.Count);
-      foreach (PathI path in paths)
-        result.Add(ScalePath(path, scale));
-      return result;
-    }
-
-    public static PathF ScalePath(PathF path, float scale)
-    {
-      if ((scale - 1).IsAlmostZero()) return path;
-      PathF result = new PathF(path.Count);
-      foreach (float2 pt in path)
-        result.Add(pt * scale);
-      return result;
-    }
-
-    public static PathsF ScalePaths(PathsF paths, float scale)
-    {
-      if ((scale - 1).IsAlmostZero()) return paths;
-      PathsF result = new PathsF(paths.Count);
-      foreach (PathF path in paths)
-        result.Add(ScalePath(path, scale));
-      return result;
-    }
-
     // Unlike ScalePath, both ScalePath64 & ScalePathD also involve type conversion
     public static PathI ScalePath64(PathF path, float scale)
     {
@@ -499,7 +466,7 @@ namespace Clipper
     {
       int cnt = paths.Count;
       PathsI res = new PathsI(cnt);
-      foreach (PathF path in paths)
+      foreach (var path in paths)
         res.Add(ScalePath64(path, scale));
       return res;
     }
@@ -515,9 +482,8 @@ namespace Clipper
 
     public static PathsF ScalePathsD(PathsI paths, float scale)
     {
-      int cnt = paths.Count;
-      PathsF res = new PathsF(cnt);
-      foreach (PathI path in paths)
+      PathsF res = new PathsF(paths.ItemsCount);
+      foreach (var path in paths)
         res.Add(ScalePathD(path, scale));
       return res;
     }
@@ -534,15 +500,15 @@ namespace Clipper
     public static PathsI Paths64(PathsF paths)
     {
       PathsI result = new PathsI(paths.Count);
-      foreach (PathF path in paths)
+      foreach (var path in paths)
         result.Add(Path64(path));
       return result;
     }
 
     public static PathsF PathsD(PathsI paths)
     {
-      PathsF result = new PathsF(paths.Count);
-      foreach (PathI path in paths)
+      PathsF result = new PathsF(paths.Sum(p => p.Count));
+      foreach (var path in paths)
         result.Add(PathD(path));
       return result;
     }
@@ -566,7 +532,7 @@ namespace Clipper
     public static PathsI TranslatePaths(PathsI paths, int dx, int dy)
     {
       PathsI result = new PathsI(paths.Count);
-      foreach (PathI path in paths)
+      foreach (var path in paths)
         result.Add(OffsetPath(path, dx, dy));
       return result;
     }
@@ -582,7 +548,7 @@ namespace Clipper
     public static PathsF TranslatePaths(PathsF paths, float dx, float dy)
     {
       PathsF result = new PathsF(paths.Count);
-      foreach (PathF path in paths)
+      foreach (var path in paths)
         result.Add(TranslatePath(path, dx, dy));
       return result;
     }
@@ -598,23 +564,6 @@ namespace Clipper
     {
       PathF result = new PathF(path);
       result.Reverse();
-      return result;
-    }
-
-    public static PathsI ReversePaths(PathsI paths)
-    {
-      PathsI result = new PathsI(paths.Count);
-      foreach (PathI t in paths)
-        result.Add(ReversePath(t));
-
-      return result;
-    }
-
-    public static PathsF ReversePaths(PathsF paths)
-    {
-      PathsF result = new PathsF(paths.Count);
-      foreach (PathF path in paths)
-        result.Add(ReversePath(path));
       return result;
     }
 
@@ -634,7 +583,7 @@ namespace Clipper
     public static int4 GetBounds(PathsI paths)
     {
       int4 result = InvalidRectI;
-      foreach (PathI path in paths)
+      foreach (var path in paths)
         foreach (int2 pt in path)
         {
           if (pt.x < result.x) result.x = pt.x;
@@ -642,7 +591,7 @@ namespace Clipper
           if (pt.y < result.z) result.z = pt.y;
           if (pt.y > result.w) result.w = pt.y;
         }
-      return result.x == long.MaxValue ? new int4() : result;
+      return result.x == int.MaxValue ? new int4() : result;
     }
 
     public static float4 GetBounds(PathF path)
@@ -661,7 +610,7 @@ namespace Clipper
     public static float4 GetBounds(PathsF paths)
     {
       float4 result = InvalidRectF;
-      foreach (PathF path in paths)
+      foreach (var path in paths)
         foreach (float2 pt in path)
         {
           if (pt.x < result.x) result.x = pt.x;
@@ -900,7 +849,7 @@ namespace Clipper
     public static PathsF RamerDouglasPeucker(PathsF paths, float epsilon)
     {
       PathsF result = new PathsF(paths.Count);
-      foreach (PathF path in paths)
+      foreach (var path in paths)
         result.Add(RamerDouglasPeucker(path, epsilon));
       return result;
     }
@@ -1083,7 +1032,7 @@ namespace Clipper
     )
     {
       PathsF result = new PathsF(paths.Count);
-      foreach (PathF path in paths)
+      foreach (var path in paths)
         result.Add(SimplifyPath(path, epsilon, isClosedPath));
       return result;
     }
@@ -1141,7 +1090,7 @@ namespace Clipper
       return ScalePathD(p, 1 / scale);
     }
 
-    public static PointInPolygonResult PointInPolygon(int2 pt, PathI polygon)
+    public static PointInPolygonResult PointInPolygon(int2 pt, NativeArray<int2> polygon)
     {
       return InternalClipper.PointInPolygon(pt, polygon);
     }
@@ -1305,11 +1254,11 @@ namespace Clipper
     public static TriangulateResult Triangulate(PathsI pp, Allocator allocator, out Unity.Collections.NativeList<int> triangleIndices, bool useDelaunay = true)
     {
       Delaunay d = new Delaunay(useDelaunay);
-      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(Allocator.Temp);
       for (int i = 0; i < pp.Count; i++)
       {
-        foreach (var pt in pp[i]) sl.AddItem(pt);
-        sl.AddSlice();
+        foreach (var pt in pp[i]) sl.AddLastSliceItem(pt);
+        sl.FinishSlice();
       }
       var res = d.Execute(sl, allocator, out triangleIndices);
       sl.Dispose();
@@ -1323,11 +1272,11 @@ namespace Clipper
       PathsI pp64 = ScalePaths64(pp, scale);
 
       Delaunay d = new Delaunay(useDelaunay);
-      SlicedList<int2> sl = new SlicedList<int2>(Allocator.Temp);
+      NativeSlicedList<int2> sl = new NativeSlicedList<int2>(Allocator.Temp);
       for (int i = 0; i < pp64.Count; i++)
       {
-        foreach (var pt in pp64[i]) sl.AddItem(pt);
-        sl.AddSlice();
+        foreach (var pt in pp64[i]) sl.AddLastSliceItem(pt);
+        sl.FinishSlice();
       }
       var res = d.Execute(sl, allocator, out triangleIndices);
       sl.Dispose();

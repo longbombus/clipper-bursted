@@ -81,7 +81,7 @@ namespace Clipper.Tests
 
       foreach (int2 pt in pointsOfInterestOutside)
       {
-        foreach (PathI path in subject)
+        foreach (var path in subject)
         {
           Assert.IsTrue(Clipper.PointInPolygon(pt, path) == PointInPolygonResult.IsOutside, 
             "outside point of interest found inside subject");
@@ -99,7 +99,7 @@ namespace Clipper.Tests
       foreach (int2 pt in pointsOfInterestInside)
       {
         int poi_inside_counter = 0;
-        foreach (PathI path in subject)
+        foreach (var path in subject)
         {
           if (Clipper.PointInPolygon(pt, path) == PointInPolygonResult.IsInside)
             poi_inside_counter++;

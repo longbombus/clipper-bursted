@@ -31,13 +31,13 @@ namespace Clipper
 
     // MinkowskiInternal: pattern & path are input NativeArray<int2> (caller-owned).
     // Returns a SlicedList<int2> allocated with 'allocator' that contains quads (4 points per slice)
-    public static SlicedList<int2> MinkowskiInternal(NativeArray<int2> pattern, NativeArray<int2> path, bool isSum, bool isClosed, Allocator allocator)
+    public static NativeSlicedList<int2> MinkowskiInternal(NativeArray<int2> pattern, NativeArray<int2> path, bool isSum, bool isClosed, Allocator allocator)
     {
       int delta = isClosed ? 0 : 1;
       int patLen = pattern.Length;
       int pathLen = path.Length;
 
-      SlicedList<int2> tmp = new SlicedList<int2>(allocator);
+      NativeSlicedList<int2> tmp = new NativeSlicedList<int2>(allocator);
 
       // For each point in 'path', add a slice containing pattern translated by that point
       for (int pi = 0; pi < pathLen; ++pi)
@@ -46,22 +46,22 @@ namespace Clipper
         for (int k = 0; k < patLen; ++k)
         {
           int2 basePt = pattern[k];
-          tmp.AddItem(isSum ? new int2(pathPt.x + basePt.x, pathPt.y + basePt.y)
+          tmp.AddLastSliceItem(isSum ? new int2(pathPt.x + basePt.x, pathPt.y + basePt.y)
                            : new int2(pathPt.x - basePt.x, pathPt.y - basePt.y));
         }
-        tmp.AddSlice();
+        tmp.FinishSlice();
       }
 
       // Build result: for each adjacent pair of slices produce quads for each pattern edge
-      SlicedList<int2> result = new SlicedList<int2>(allocator);
+      NativeSlicedList<int2> result = new NativeSlicedList<int2>(allocator);
       if (pathLen == 0 || patLen == 0) return result;
 
       int g = isClosed ? pathLen - 1 : 0;
       int h = patLen - 1;
       for (int i = delta; i < pathLen; ++i)
       {
-        NativeSlice<int2> sliceG = tmp.GetSlice(g);
-        NativeSlice<int2> sliceI = tmp.GetSlice(i);
+        NativeSlice<int2> sliceG = tmp[g];
+        NativeSlice<int2> sliceI = tmp[i];
         for (int j = 0; j < patLen; ++j)
         {
           int2 p0 = sliceG[h];
@@ -81,19 +81,19 @@ namespace Clipper
           if (area < 0)
           {
             // reverse ordering to maintain consistent orientation
-            result.AddItem(p0);
-            result.AddItem(p3);
-            result.AddItem(p2);
-            result.AddItem(p1);
+            result.AddLastSliceItem(p0);
+            result.AddLastSliceItem(p3);
+            result.AddLastSliceItem(p2);
+            result.AddLastSliceItem(p1);
           }
           else
           {
-            result.AddItem(p0);
-            result.AddItem(p1);
-            result.AddItem(p2);
-            result.AddItem(p3);
+            result.AddLastSliceItem(p0);
+            result.AddLastSliceItem(p1);
+            result.AddLastSliceItem(p2);
+            result.AddLastSliceItem(p3);
           }
-          result.AddSlice();
+          result.FinishSlice();
 
           h = j;
         }
@@ -105,18 +105,18 @@ namespace Clipper
     }
 
     // Public API: inputs are NativeArray<int2>, output is SlicedList<int2> allocated with 'allocator'
-    public static SlicedList<int2> Sum(NativeArray<int2> pattern, NativeArray<int2> path, bool isClosed, Allocator allocator)
+    public static NativeSlicedList<int2> Sum(NativeArray<int2> pattern, NativeArray<int2> path, bool isClosed, Allocator allocator)
     {
-      SlicedList<int2> raw = MinkowskiInternal(pattern, path, true, isClosed, allocator);
+      NativeSlicedList<int2> raw = MinkowskiInternal(pattern, path, true, isClosed, allocator);
       // The Minkowski result historically was unioned using Clipper.Union(...).
       // We will convert the SlicedList into PathsI, call Union, then convert back to SlicedList.
       // To avoid extra allocations here and keep changes minimal, create a PathsI, call Union, then convert.
 
       // Build PathsI from raw
-      PathsI tmpPaths = new PathsI(raw.SliceCount);
-      for (int si = 0; si < raw.SliceCount; ++si)
+      PathsI tmpPaths = new PathsI(raw.SlicesCount);
+      for (int si = 0; si < raw.SlicesCount; ++si)
       {
-        var slice = raw.GetSlice(si);
+        var slice = raw[si];
         PathI p = new PathI(slice.Length);
         for (int k = 0; k < slice.Length; ++k) p.Add(slice[k]);
         tmpPaths.Add(p);
@@ -126,16 +126,16 @@ namespace Clipper
       PathsI unioned = Clipper.Union(tmpPaths, FillRule.NonZero);
 
       // Convert unioned PathsI back into SlicedList<int2> with the requested allocator
-      SlicedList<int2> result = new SlicedList<int2>(allocator);
+      NativeSlicedList<int2> result = new NativeSlicedList<int2>(allocator);
       for (int i = 0; i < unioned.Count; ++i)
       {
-        foreach (var pt in unioned[i]) result.AddItem(pt);
-        result.AddSlice();
+        foreach (var pt in unioned[i]) result.AddLastSliceItem(pt);
+        result.FinishSlice();
       }
       return result;
     }
 
-    public static SlicedList<int2> Sum(NativeArray<float2> pattern, NativeArray<float2> path, bool isClosed, int decimalPlaces, Allocator allocator)
+    public static NativeSlicedList<int2> Sum(NativeArray<float2> pattern, NativeArray<float2> path, bool isClosed, int decimalPlaces, Allocator allocator)
     {
       float scale = decimalPlaces <= 0 ? 1f : math.exp10(math.min(decimalPlaces, 8));
       int plen = pattern.Length;
@@ -153,15 +153,15 @@ namespace Clipper
       return res;
     }
 
-    public static SlicedList<int2> Diff(NativeArray<int2> pattern, NativeArray<int2> path, bool isClosed, Allocator allocator)
+    public static NativeSlicedList<int2> Diff(NativeArray<int2> pattern, NativeArray<int2> path, bool isClosed, Allocator allocator)
     {
       // similar to Sum but isSum=false
-      SlicedList<int2> raw = MinkowskiInternal(pattern, path, false, isClosed, allocator);
+      NativeSlicedList<int2> raw = MinkowskiInternal(pattern, path, false, isClosed, allocator);
 
-      PathsI tmpPaths = new PathsI(raw.SliceCount);
-      for (int si = 0; si < raw.SliceCount; ++si)
+      PathsI tmpPaths = new PathsI(raw.SlicesCount);
+      for (int si = 0; si < raw.SlicesCount; ++si)
       {
-        var slice = raw.GetSlice(si);
+        var slice = raw[si];
         PathI p = new PathI(slice.Length);
         for (int k = 0; k < slice.Length; ++k) p.Add(slice[k]);
         tmpPaths.Add(p);
@@ -170,16 +170,16 @@ namespace Clipper
 
       PathsI unioned = Clipper.Union(tmpPaths, FillRule.NonZero);
 
-      SlicedList<int2> result = new SlicedList<int2>(allocator);
+      NativeSlicedList<int2> result = new NativeSlicedList<int2>(allocator);
       for (int i = 0; i < unioned.Count; ++i)
       {
-        foreach (var pt in unioned[i]) result.AddItem(pt);
-        result.AddSlice();
+        foreach (var pt in unioned[i]) result.AddLastSliceItem(pt);
+        result.FinishSlice();
       }
       return result;
     }
 
-    public static SlicedList<int2> Diff(NativeArray<float2> pattern, NativeArray<float2> path, bool isClosed, int decimalPlaces, Allocator allocator)
+    public static NativeSlicedList<int2> Diff(NativeArray<float2> pattern, NativeArray<float2> path, bool isClosed, int decimalPlaces, Allocator allocator)
     {
       float scale = decimalPlaces <= 0 ? 1f : math.exp10(math.min(decimalPlaces, 8));
       int plen = pattern.Length;
