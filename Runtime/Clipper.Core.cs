@@ -11,51 +11,11 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Mathematics;
 
 namespace Clipper
 {
-
-  public class PathI : List<int2>
-  {
-    public PathI() : base() { }
-    public PathI(int capacity = 0) : base(capacity) { }
-    public PathI(IEnumerable<int2> path) : base(path) { }
-    public override string ToString()
-    {
-      return string.Join(", ", this);
-    }
-  }
-
-  public class PathsI : List<PathI>
-  {
-    public PathsI() : base() { }
-    public PathsI(int capacity = 0) : base(capacity) { }
-    public PathsI(IEnumerable<PathI> paths) : base(paths) { }
-    public override string ToString()
-    {
-      return string.Join(Environment.NewLine, this);
-    }
-  }
-
-  public class PathF : List<float2>
-  {
-    public PathF() : base() { }
-    public PathF(int capacity = 0) : base(capacity) { }
-    public PathF(IEnumerable<float2> path) : base(path) { }
-    public override string ToString()
-      => string.Join(", ", this);
-  }
-
-  public class PathsF : List<PathF>
-  {
-    public PathsF() : base() { }
-    public PathsF(int capacity = 0) : base(capacity) { }
-    public PathsF(IEnumerable<PathF> paths) : base(paths) { }
-    public override string ToString()
-      => string.Join(Environment.NewLine, this);
-  }
-
   // Note: all clipping operations except for Difference are commutative.
   public enum ClipType
   {
