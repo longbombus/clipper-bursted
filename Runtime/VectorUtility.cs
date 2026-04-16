@@ -31,9 +31,6 @@ namespace Clipper
 
 		#region Rect
 
-		public static readonly int4 Invalidint4 = new(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
-		public static readonly float4 Invalidfloat4 = new(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
-
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static int GetLeft(this in int4 rect)
 			=> rect.x;
@@ -92,7 +89,11 @@ namespace Clipper
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsValid(this in int4 rect)
-			=> rect.x < int.MaxValue;
+			=> rect.x < int.MaxValue && rect.y < int.MaxValue && rect.z > int.MinValue && rect.w > int.MinValue;
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static bool IsValid(this in float4 rect)
+			=> rect.x < float.MaxValue && rect.y < float.MaxValue && rect.z > float.MinValue && rect.w > float.MinValue;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static bool IsEmpty(this in int4 rect)

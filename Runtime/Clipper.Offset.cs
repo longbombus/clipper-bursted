@@ -49,7 +49,7 @@ namespace Clipper
 
         bool isJoined = ((endType == EndType.Polygon) || (endType == EndType.Joined));
         inPaths = new PathsI(paths.Count);
-        foreach(PathI path in paths)
+        foreach(var path in paths)
           inPaths.Add(Clipper.StripDuplicates(path, isJoined));
 
         if (endType == EndType.Polygon)
@@ -170,7 +170,7 @@ namespace Clipper
       if (Math.Abs(delta) < 0.5)
       {
         foreach (Group group in _groupList)
-          foreach (PathI path in group.inPaths)
+          foreach (var path in group.inPaths)
             _solution.Add(path);
         return;
       }
@@ -586,13 +586,10 @@ namespace Clipper
         _stepsPerRad = stepsPer360 / math.TAU;
       }
 
-      using List<PathI>.Enumerator pathIt = group.inPaths.GetEnumerator();
-      while (pathIt.MoveNext())
+      foreach (var p in group.inPaths)
       {
-        PathI p = pathIt.Current!;
-
         pathOut = new PathI();
-        int cnt = p.Count;
+        int cnt = p.Length;
 
         switch (cnt)
         {

@@ -40,7 +40,7 @@ namespace Clipper.Benchmark
 			foreach (var path in solution)
 			{
 				var prevPoint = path[^1];
-				for (var i = 0; i < path.Count; i++)
+				for (var i = 0; i < path.Length; i++)
 				{
 					var currPoint = path[i];
 					Debug.DrawLine(new Vector3(prevPoint.x, prevPoint.y), new Vector3(currPoint.x, currPoint.y), Color.red);

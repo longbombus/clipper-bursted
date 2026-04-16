@@ -655,9 +655,9 @@ namespace Clipper
     {
       PathsI result = new PathsI();
       if (rect_.IsEmpty()) return result;
-      foreach (PathI path in paths)
+      foreach (var path in paths)
       {
-        if (path.Count < 3) continue;
+        if (path.Length < 3) continue;
         pathBounds_ = Clipper.GetBounds(path);
         if (!rect_.Intersects(pathBounds_))
           continue; // the path must be completely outside fRect
@@ -961,9 +961,9 @@ namespace Clipper
     {
       PathsI result = new PathsI();
       if (rect_.IsEmpty()) return result;
-      foreach (PathI path in paths)
+      foreach (var path in paths)
       {
-        if (path.Count < 2) continue;
+        if (path.Length < 2) continue;
         pathBounds_ = Clipper.GetBounds(path);
         if (!rect_.Intersects(pathBounds_))
           continue; // the path must be completely outside fRect

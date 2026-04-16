@@ -50,9 +50,8 @@ namespace Clipper
             tmp[g][h], tmp[i][h], tmp[i][j], tmp[g][j]
           };
           if (!Clipper.IsPositive(quad))
-            result.Add(Clipper.ReversePath(quad));
-          else
-            result.Add(quad);
+            quad.Reverse();
+          result.Add(quad);
           h = j;
         }
         g = i;

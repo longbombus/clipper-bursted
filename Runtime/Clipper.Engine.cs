@@ -237,11 +237,9 @@ namespace Clipper
     internal static void AddPathsToVertexList(PathsI paths, PathType polytype, bool isOpen,
       List<LocalMinima> minimaList, VertexPoolList vertexList)
     {
-      int totalVertCnt = 0;
-      foreach (PathI path in paths) totalVertCnt += path.Count;
-      vertexList.EnsureCapacity(vertexList.Count + totalVertCnt);
+      vertexList.EnsureCapacity(vertexList.Count + paths.ItemsCount);
 
-      foreach (PathI path in paths)
+      foreach (var path in paths)
       {
         Vertex? v0 = null, prev_v = null, curr_v;
         foreach (int2 pt in path)
@@ -3247,10 +3245,10 @@ private void DoHorizontal(Active horz)
       if (!success) return false;
 
       solutionClosed.EnsureCapacity(solClosed64.Count);
-      foreach (PathI path in solClosed64)
+      foreach (var path in solClosed64)
         solutionClosed.Add(Clipper.ScalePathD(path, _invScale));
       solutionOpen.EnsureCapacity(solOpen64.Count);
-      foreach (PathI path in solOpen64)
+      foreach (var path in solOpen64)
         solutionOpen.Add(Clipper.ScalePathD(path, _invScale));
 
       return true;
@@ -3284,7 +3282,7 @@ private void DoHorizontal(Active horz)
       if (!success) return false;
       if (oPaths.Count <= 0) return true;
       openPaths.EnsureCapacity(oPaths.Count);
-      foreach (PathI path in oPaths)
+      foreach (var path in oPaths)
         openPaths.Add(Clipper.ScalePathD(path, _invScale));
 
       return true;

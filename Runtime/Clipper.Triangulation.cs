@@ -197,15 +197,13 @@ namespace Clipper
 
     private bool AddPaths(PathsI paths)
     {
-      int totalVertexCount = 0;
-      foreach (PathI path in paths)
-        totalVertexCount += path.Count;
+      int totalVertexCount = paths.ItemsCount;
       if (totalVertexCount == 0) return false;
 
       allVertices.Capacity = allVertices.Count + totalVertexCount;
       allEdges.Capacity = allEdges.Count + totalVertexCount;
 
-      foreach (PathI path in paths)
+      foreach (var path in paths)
         AddPath(path);
 
       return allVertices.Count > 2;
