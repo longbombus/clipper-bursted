@@ -3246,10 +3246,10 @@ private void DoHorizontal(Active horz)
 
       solutionClosed.EnsureCapacity(solClosed64.Count);
       foreach (var path in solClosed64)
-        solutionClosed.Add(Clipper.ScalePathD(path, _invScale));
+        solutionClosed.Add(path, _invScale);
       solutionOpen.EnsureCapacity(solOpen64.Count);
       foreach (var path in solOpen64)
-        solutionOpen.Add(Clipper.ScalePathD(path, _invScale));
+        solutionOpen.Add(path, _invScale);
 
       return true;
     }
@@ -3283,7 +3283,7 @@ private void DoHorizontal(Active horz)
       if (oPaths.Count <= 0) return true;
       openPaths.EnsureCapacity(oPaths.Count);
       foreach (var path in oPaths)
-        openPaths.Add(Clipper.ScalePathD(path, _invScale));
+        openPaths.Add(path, _invScale);
 
       return true;
     }

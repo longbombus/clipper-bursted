@@ -11,6 +11,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Mathematics;
 
 namespace Clipper
@@ -87,7 +88,7 @@ namespace Clipper
       return result;
     }
 
-    private static bool Path1ContainsPath2(PathI path1, PathI path2)
+    private static bool Path1ContainsPath2(NativeArray<int2> path1, NativeArray<int2> path2)
     {
       // nb: occasionally, due to rounding, path1 may 
       // appear (momentarily) inside or outside path2.
@@ -413,8 +414,7 @@ namespace Clipper
       }
     }
 
-    protected void GetNextLocation(PathI path,
-      ref Location loc, ref int i, int highI)
+    protected void GetNextLocation(NativeArray<int2> path, ref Location loc, ref int i, int highI)
     {
       switch (loc)
       {
@@ -500,15 +500,15 @@ namespace Clipper
       return result > 0;
     }
 
-    private void ExecuteInternal(PathI path)
+    private void ExecuteInternal(NativeArray<int2> path)
     {
-      if (path.Count < 3 || rect_.IsEmpty()) return;      
+      if (path.Length < 3 || rect_.IsEmpty()) return;
       List<Location> startLocs = new List<Location>();
       
       Location firstCross = Location.inside;
       Location crossingLoc = firstCross, prev = firstCross;
 
-      int i, highI = path.Count - 1;
+      int i, highI = path.Length - 1;
       if (!GetLocation(rect_, path[highI], out Location loc))
       {
         i = highI - 1;
@@ -622,8 +622,7 @@ namespace Clipper
       {
         // path never intersects
         if (startingLoc == Location.inside) return;
-        if (!pathBounds_.Contains(rect_) ||
-            !Path1ContainsPath2(path, rectPath_)) return;
+        if (!pathBounds_.Contains(rect_) || !Path1ContainsPath2(path, rectPath_)) return;
         bool startLocsClockwise = StartLocsAreClockwise(startLocs);
         for (int j = 0; j < 4; j++)
         {
@@ -1001,13 +1000,13 @@ namespace Clipper
       return result;
     }
 
-    private void ExecuteInternal(PathI path)
+    private void ExecuteInternal(NativeArray<int2> path)
     {
       results_.Clear();
-      if (path.Count < 2 || rect_.IsEmpty()) return;
+      if (path.Length < 2 || rect_.IsEmpty()) return;
 
       Location prev = Location.inside;
-      int i = 1, highI = path.Count - 1;
+      int i = 1, highI = path.Length - 1;
       if (!GetLocation(rect_, path[0], out Location loc))
       {
         while (i <= highI && !GetLocation(rect_, path[i], out prev)) i++;

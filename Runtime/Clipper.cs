@@ -248,13 +248,13 @@ namespace Clipper
       return Minkowski.Diff(pattern, path, isClosed);
     }
 
-    public static float Area(PathI path)
+    public static float Area(NativeArray<int2> path)
     {
       // https://en.wikipedia.org/wiki/Shoelace_formula
-      float a = 0f;
-      if (path.Count < 3)
+      if (path.Length < 3)
         return 0f;
 
+      float a = 0f;
       int2 prevPt = path[^1];
       foreach (int2 pt in path)
       {
@@ -272,12 +272,12 @@ namespace Clipper
       return a;
     }
 
-    public static float Area(PathF path)
+    public static float Area(NativeArray<float2> path)
     {
-      float a = 0f;
-      if (path.Count < 3)
+      if (path.Length < 3)
         return 0f;
 
+      float a = 0f;
       float2 prevPt = path[^1];
       foreach (float2 pt in path)
       {
@@ -307,14 +307,6 @@ namespace Clipper
       return Area(poly) >= 0;
     }
 
-    public static PathI OffsetPath(PathI path, int dx, int dy)
-    {
-      PathI result = new PathI(path.Count);
-      foreach (int2 pt in path)
-        result.Add(new int2(pt.x + dx, pt.y + dy));
-      return result;
-    }
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int2 Scaleint2(int2 pt, float scale)
       => (int2) math.round((float2)pt * scale);
@@ -332,8 +324,7 @@ namespace Clipper
     {
       int cnt = path.Count;
       PathI res = new PathI(cnt);
-      foreach (float2 pt in path)
-        res.Add((int2)(pt * scale));
+      res.AddRange(path, scale);
       return res;
     }
 
@@ -342,7 +333,7 @@ namespace Clipper
       int cnt = paths.Count;
       PathsI res = new PathsI(cnt);
       foreach (var path in paths)
-        res.Add(ScalePath64(path, scale));
+        res.Add(path, scale);
       return res;
     }
 
@@ -350,8 +341,7 @@ namespace Clipper
     {
       int cnt = path.Count;
       PathF res = new PathF(cnt);
-      foreach (int2 pt in path)
-        res.Add((float2)pt * scale);
+      res.AddRange(path, scale);
       return res;
     }
 
@@ -360,83 +350,11 @@ namespace Clipper
       int cnt = paths.Count;
       PathsF res = new PathsF(cnt);
       foreach (var path in paths)
-        res.Add(ScalePathD(path, scale));
+        res.Add(path, scale);
       return res;
     }
 
-    // The static functions Path64 and PathD convert path types without scaling
-    public static PathI Path64(PathF path)
-    {
-      PathI result = new PathI(path.Count);
-      foreach (float2 pt in path)
-        result.Add(new int2(pt));
-      return result;
-    }
-
-    public static PathsI Paths64(PathsF paths)
-    {
-      PathsI result = new PathsI(paths.Count);
-      foreach (var path in paths)
-        result.Add(Path64(path));
-      return result;
-    }
-
-    public static PathsF PathsD(PathsI paths)
-    {
-      PathsF result = new PathsF(paths.Count);
-      foreach (var path in paths)
-        result.Add(PathD(path));
-      return result;
-    }
-
-    public static PathF PathD(PathI path)
-    {
-      PathF result = new PathF(path.Count);
-      foreach (int2 pt in path)
-        result.Add(new float2(pt));
-      return result;
-    }
-
-    public static PathI TranslatePath(PathI path, int dx, int dy)
-    {
-      PathI result = new PathI(path.Count);
-      foreach (int2 pt in path)
-        result.Add(new int2(pt.x + dx, pt.y + dy));
-      return result;
-    }
-
-    public static PathsI TranslatePaths(PathsI paths, int dx, int dy)
-    {
-      PathsI result = new PathsI(paths.Count);
-      foreach (var path in paths)
-        result.Add(OffsetPath(path, dx, dy));
-      return result;
-    }
-
-    public static PathF TranslatePath(PathF path, float dx, float dy)
-    {
-      PathF result = new PathF(path.Count);
-      foreach (float2 pt in path)
-        result.Add(new float2(pt.x + dx, pt.y + dy));
-      return result;
-    }
-
-    public static PathsF TranslatePaths(PathsF paths, float dx, float dy)
-    {
-      PathsF result = new PathsF(paths.Count);
-      foreach (var path in paths)
-        result.Add(TranslatePath(path, dx, dy));
-      return result;
-    }
-
-    public static PathI ReversePath(PathI path)
-    {
-      PathI result = new PathI(path);
-      result.Reverse();
-      return result;
-    }
-
-    public static int4 GetBounds(PathI path)
+    public static int4 GetBounds(NativeArray<int2> path)
     {
       int4 result = InvalidRectI;
       foreach (int2 pt in path)
@@ -449,17 +367,16 @@ namespace Clipper
       return result.IsValid() ? result : new int4();
     }
 
-    public static int4 GetBounds(PathsI paths)
+    public static int4 GetBounds(NativeSlicedList<int2> paths)
     {
       int4 result = InvalidRectI;
-      foreach (var path in paths)
-        foreach (int2 pt in path)
-        {
-          if (pt.x < result.x) result.x = pt.x;
-          if (pt.x > result.z) result.z = pt.x;
-          if (pt.y < result.y) result.y = pt.y;
-          if (pt.y > result.w) result.w = pt.y;
-        }
+      foreach (var pt in paths.AsArray())
+      {
+        if (pt.x < result.x) result.x = pt.x;
+        if (pt.x > result.z) result.z = pt.x;
+        if (pt.y < result.y) result.y = pt.y;
+        if (pt.y > result.w) result.w = pt.y;
+      }
       return result.IsValid() ? result : new int4();
     }
 
@@ -544,22 +461,18 @@ namespace Clipper
       return result;
     }
 
-    public static PathI StripDuplicates(PathI path, bool isClosedPath)
+    public static void StripDuplicates(NativeArray<int2> path, bool isClosedPath, NativeList<int2> result)
     {
-      int cnt = path.Count;
-      PathI result = new PathI(cnt);
-      if (cnt == 0) return result;
       int2 lastPt = path[0];
       result.Add(lastPt);
-      for (int i = 1; i < cnt; i++)
+      for (int i = 1; i < path.Length; i++)
         if (!lastPt.Equals(path[i]))
         {
           lastPt = path[i];
           result.Add(lastPt);
         }
       if (isClosedPath && lastPt.Equals(result[0]))
-        result.RemoveAt(result.Count - 1);
-      return result;
+        result.RemoveAt(result.Length - 1);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -625,13 +538,13 @@ namespace Clipper
       return Sqr(a * d - c * b) / (c * c + d * d);
     }
 
-    internal static void RDP(PathI path, int begin, int end, double epsSqrd, List<bool> flags)
+    internal static void RDP(NativeArray<int2> path, int begin, int end, double epsSqrd, NativeBitArray flags)
     {
       while (true)
       {
         int idx = 0;
         double max_d = 0;
-        while (end > begin && path[begin].Equals(path[end])) flags[end--] = false;
+        while (end > begin && path[begin].Equals(path[end])) flags.Set(end--, false);
         for (int i = begin + 1; i < end; ++i)
         {
           // PerpendicDistFromLineSqrd - avoids expensive Sqrt()
@@ -642,7 +555,7 @@ namespace Clipper
         }
 
         if (max_d <= epsSqrd) return;
-        flags[idx] = true;
+        flags.Set(idx, true);
         if (idx > begin + 1) RDP(path, begin, idx, epsSqrd, flags);
         if (idx < end - 1)
         {
@@ -654,33 +567,41 @@ namespace Clipper
       }
     }
 
-    public static PathI RamerDouglasPeucker(PathI path, float epsilon)
+    public static void RamerDouglasPeucker(NativeArray<int2> path, float epsilon, NativeList<int2> result)
     {
-      int len = path.Count;
-      if (len < 5) return path;
-      List<bool> flags = new List<bool>(new bool[len]) { [0] = true, [len - 1] = true };
-      RDP(path, 0, len - 1, Sqr(epsilon), flags);
-      PathI result = new PathI(len);
-      for (int i = 0; i < len; ++i)
-        if (flags[i]) result.Add(path[i]);
-      return result;
+      if (path.Length < 5)
+      {
+        result.AddRange(path);
+        return;
+      }
+      using var flags = new NativeBitArray(path.Length, Allocator.Temp);
+      flags.Set(0, true);
+      flags.Set(path.Length - 1, true);
+      RDP(path, 0, path.Length - 1, Sqr(epsilon), flags);
+      result.AddRange(path, flags);
     }
 
     public static PathsI RamerDouglasPeucker(PathsI paths, float epsilon)
     {
+      using var simplifiedPath = new NativeList<int2>(Allocator.Temp);
       PathsI result = new PathsI(paths.Count);
       foreach (var path in paths)
-        result.Add(RamerDouglasPeucker(path, epsilon));
+      {
+        simplifiedPath.Clear();
+        RamerDouglasPeucker(path, epsilon, simplifiedPath);
+        result.Add(simplifiedPath.AsArray());
+      }
+
       return result;
     }
 
-    internal static void RDP(PathF path, int begin, int end, float epsSqrd, List<bool> flags)
+    internal static void RDP(NativeArray<float2> path, int begin, int end, float epsSqrd, NativeBitArray flags)
     {
       while (true)
       {
         int idx = 0;
         float max_d = 0;
-        while (end > begin && path[begin].Equals(path[end])) flags[end--] = false;
+        while (end > begin && path[begin].Equals(path[end])) flags.Set(end--, false);
         for (int i = begin + 1; i < end; ++i)
         {
           // PerpendicDistFromLineSqrd - avoids expensive Sqrt()
@@ -691,7 +612,7 @@ namespace Clipper
         }
 
         if (max_d <= epsSqrd) return;
-        flags[idx] = true;
+        flags.Set(idx, true);
         if (idx > begin + 1) RDP(path, begin, idx, epsSqrd, flags);
         if (idx < end - 1)
         {
@@ -703,60 +624,72 @@ namespace Clipper
       }
     }
 
-    public static PathF RamerDouglasPeucker(PathF path, float epsilon)
+    public static void RamerDouglasPeucker(NativeArray<float2> path, float epsilon, NativeList<float2> result)
     {
-      int len = path.Count;
-      if (len < 5) return path;
-      List<bool> flags = new List<bool>(new bool[len]) { [0] = true, [len - 1] = true };
-      RDP(path, 0, len - 1, Sqr(epsilon), flags);
-      PathF result = new PathF(len);
-      for (int i = 0; i < len; ++i)
-        if (flags[i]) result.Add(path[i]);
-      return result;
+      if (path.Length < 5)
+      {
+        result.AddRange(path);
+        return;
+      }
+      using var flags = new NativeBitArray(path.Length, Allocator.Temp);
+      flags.Set(0, true);
+      flags.Set(path.Length - 1, true);
+      RDP(path, 0, path.Length - 1, Sqr(epsilon), flags);
+      result.AddRange(path, flags);
     }
 
     public static PathsF RamerDouglasPeucker(PathsF paths, float epsilon)
     {
+      using var resultPath = new NativeList<float2>(Allocator.Temp);
       PathsF result = new PathsF(paths.Count);
       foreach (var path in paths)
-        result.Add(RamerDouglasPeucker(path, epsilon));
+      {
+        resultPath.Clear();
+        RamerDouglasPeucker(path, epsilon, resultPath);
+        result.Add(resultPath.AsArray());
+      }
+
       return result;
     }
 
-
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static int GetNext(int current, int high, ref bool[] flags)
+    private static int GetNext(int current, int high, NativeBitArray flags)
     {
       ++current;
-      while (current <= high && flags[current]) ++current;
+      while (current <= high && flags.IsSet(current)) ++current;
       if (current <= high) return current;
       current = 0;
-      while (flags[current]) ++current;
+      while (flags.IsSet(current)) ++current;
       return current;
     }
 
-    private static int GetPrior(int current, int high, ref bool[] flags)
+    private static int GetPrior(int current, int high, NativeBitArray flags)
     {
       if (current == 0) current = high;
       else --current;
-      while (current > 0 && flags[current]) --current;
-      if (!flags[current]) return current;
+      while (current > 0 && flags.IsSet(current)) --current;
+      if (!flags.IsSet(current)) return current;
       current = high;
-      while (flags[current]) --current;
+      while (flags.IsSet(current)) --current;
       return current;
     }
 
-      public static PathI SimplifyPath(
-        PathI path,
+      public static void SimplifyPath(
+        NativeArray<int2> path,
         float epsilon,
-        bool isClosedPath = true
+        bool isClosedPath,
+        NativeList<int2> result
       )
     {
-      int len = path.Count, high = len - 1;
+      int len = path.Length, high = len - 1;
       double epsSqr = Sqr(epsilon);
-      if (len < 4) return path;
+      if (len < 4)
+      {
+        result.AddRange(path);
+        return;
+      }
 
-      bool[] flags = new bool[len];
+      using var filter = new NativeBitArray(len, Allocator.Temp);
       double[] dsq = new double[len];
       int curr = 0;
 
@@ -781,13 +714,13 @@ namespace Clipper
           int start = curr;
           do
           {
-            curr = GetNext(curr, high, ref flags);
+            curr = GetNext(curr, high, filter);
           } while (curr != start && dsq[curr] > epsSqr);
           if (curr == start) break;
         }
 
-        int prev = GetPrior(curr, high, ref flags);
-        int next = GetNext(curr, high, ref flags);
+        int prev = GetPrior(curr, high, filter);
+        int next = GetNext(curr, high, filter);
         if (next == prev) break;
 
         int prior2;
@@ -796,23 +729,22 @@ namespace Clipper
           prior2 = prev;
           prev = curr;
           curr = next;
-          next = GetNext(next, high, ref flags);
+          next = GetNext(next, high, filter);
         }
         else
-          prior2 = GetPrior(prev, high, ref flags);
+          prior2 = GetPrior(prev, high, filter);
 
-        flags[curr] = true;
+        filter.Set(curr, false);
         curr = next;
-        next = GetNext(next, high, ref flags);
+        next = GetNext(next, high, filter);
         if (isClosedPath || ((curr != high) && (curr != 0)))
           dsq[curr] = PerpendicDistFromLineSqrd(path[curr], path[prev], path[next]);
         if (isClosedPath || ((prev != 0) && (prev != high)))
           dsq[prev] = PerpendicDistFromLineSqrd(path[prev], path[prior2], path[curr]);
       }
-      PathI result = new PathI(len);
-      for (int i = 0; i < len; i++)
-        if (!flags[i]) result.Add(path[i]);
-      return result;
+
+      filter.Negate();
+      result.AddRange(path, filter);
     }
 
     public static PathsI SimplifyPaths(
@@ -822,22 +754,33 @@ namespace Clipper
     )
     {
       PathsI result = new PathsI(paths.Count);
+      using var simplifiedPath = new NativeList<int2>(Allocator.Temp);
       foreach (var path in paths)
-        result.Add(SimplifyPath(path, epsilon, isClosedPaths));
+      {
+        simplifiedPath.Clear();
+        SimplifyPath(path, epsilon, isClosedPaths, simplifiedPath);
+        result.Add(simplifiedPath.AsArray());
+      }
+
       return result;
     }
 
-    public static PathF SimplifyPath(
-      PathF path,
+    public static void SimplifyPath(
+      NativeArray<float2> path,
       float epsilon,
-      bool isClosedPath = true
+      bool isClosedPath,
+      NativeList<float2> result
     )
     {
-      int len = path.Count, high = len - 1;
+      int len = path.Length, high = len - 1;
       float epsSqr = Sqr(epsilon);
-      if (len < 4) return path;
+      if (len < 4)
+      {
+        result.AddRange(path);
+        return;
+      }
 
-      bool[] flags = new bool[len];
+      using var filter = new NativeBitArray(len, Allocator.Temp);
       double[] dsq = new double[len];
       int curr = 0;
       if (isClosedPath)
@@ -860,13 +803,13 @@ namespace Clipper
           int start = curr;
           do
           {
-            curr = GetNext(curr, high, ref flags);
+            curr = GetNext(curr, high, filter);
           } while (curr != start && dsq[curr] > epsSqr);
           if (curr == start) break;
         }
 
-        int prev = GetPrior(curr, high, ref flags);
-        int next = GetNext(curr, high, ref flags);
+        int prev = GetPrior(curr, high, filter);
+        int next = GetNext(curr, high, filter);
         if (next == prev) break;
 
         int prior2;
@@ -875,23 +818,22 @@ namespace Clipper
           prior2 = prev;
           prev = curr;
           curr = next;
-          next = GetNext(next, high, ref flags);
+          next = GetNext(next, high, filter);
         }
         else
-          prior2 = GetPrior(prev, high, ref flags);
+          prior2 = GetPrior(prev, high, filter);
 
-        flags[curr] = true;
+        filter.Set(curr, true);
         curr = next;
-        next = GetNext(next, high, ref flags);
+        next = GetNext(next, high, filter);
         if (isClosedPath || ((curr != high) && (curr != 0)))
           dsq[curr] = PerpendicDistFromLineSqrd(path[curr], path[prev], path[next]);
         if (isClosedPath || ((prev != 0) && (prev != high)))
           dsq[prev] = PerpendicDistFromLineSqrd(path[prev], path[prior2], path[curr]);
       }
-      PathF result = new PathF(len);
-      for (int i = 0; i < len; i++)
-        if (!flags[i]) result.Add(path[i]);
-      return result;
+
+      filter.Negate();
+      result.AddRange(path, filter);
     }
 
     public static PathsF SimplifyPaths(
@@ -901,8 +843,13 @@ namespace Clipper
     )
     {
       PathsF result = new PathsF(paths.Count);
-      foreach (var path in paths)
-        result.Add(SimplifyPath(path, epsilon, isClosedPath));
+      using (var simplifiedPath = new NativeList<float2>(Allocator.Temp))
+        foreach (var path in paths)
+        {
+          simplifiedPath.Clear();
+          SimplifyPath(path, epsilon, isClosedPath, simplifiedPath);
+          result.Add(simplifiedPath.AsArray());
+        }
       return result;
     }
 
@@ -959,7 +906,7 @@ namespace Clipper
       return ScalePathD(p, 1 / scale);
     }
 
-    public static PointInPolygonResult PointInPolygon(int2 pt, PathI polygon)
+    public static PointInPolygonResult PointInPolygon(int2 pt, NativeArray<int2> polygon)
     {
       return InternalClipper.PointInPolygon(pt, polygon);
     }

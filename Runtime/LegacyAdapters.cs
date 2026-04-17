@@ -43,6 +43,8 @@ namespace Clipper
 		}
 
 		public void Add(T pt) => list.Add(pt);
+		public void AddRange(NativeArray<float2> seq, float scale) => ((Path<int2>)(object)this).list.AddRange(seq, scale);
+		public void AddRange(NativeArray<int2> seq, float scale) => ((Path<float2>)(object)this).list.AddRange(seq, scale);
 		public void RemoveAt(int index) => list.RemoveAt(index);
 		public void Clear() => list.Clear();
 		public void EnsureCapacity(int capacity) => list.EnsureCapacity(capacity);
@@ -89,6 +91,8 @@ namespace Clipper
 		public void EnsureCapacity(int itemsCount) => list.EnsureItemsCapacity(itemsCount);
 		public void Add(Path<T> path) => list.Add((NativeArray<T>)path);
 		public void Add(NativeArray<T> slice) => list.Add(slice);
+		public void Add(NativeArray<float2> slice, float scale) => ((Paths<int2>)(object)this).list.Add(slice, scale);
+		public void Add(NativeArray<int2> slice, float scale) => ((Paths<float2>)(object)this).list.Add(slice, scale);
 		public void Clear() => list.Clear();
 
 		IEnumerator<NativeArray<T>> IEnumerable<NativeArray<T>>.GetEnumerator() => list.GetEnumerator();

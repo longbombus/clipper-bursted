@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Mathematics;
 
 namespace Clipper
@@ -49,8 +50,13 @@ namespace Clipper
 
         bool isJoined = ((endType == EndType.Polygon) || (endType == EndType.Joined));
         inPaths = new PathsI(paths.Count);
-        foreach(var path in paths)
-          inPaths.Add(Clipper.StripDuplicates(path, isJoined));
+        using (var strippedPath = new NativeList<int2>(Allocator.Temp))
+          foreach (var path in paths)
+          {
+            strippedPath.Clear();
+            Clipper.StripDuplicates(path, isJoined, strippedPath);
+            inPaths.Add(strippedPath.AsArray());
+          }
 
         if (endType == EndType.Polygon)
         {
@@ -105,7 +111,7 @@ namespace Clipper
     public bool PreserveCollinear { get; set; }
     public bool ReverseSolution { get; set; }
 
-    public delegate float DeltaCallback64(PathI path, PathF path_norms, int currPt, int prevPt);
+    public delegate float DeltaCallback64(NativeArray<int2> path, NativeArray<float2> path_norms, int currPt, int prevPt);
     public DeltaCallback64 DeltaCallback { get; set; }
 
     public ClipperOffset(
@@ -297,7 +303,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoBevel(PathI path, int j, int k)
+    private void DoBevel(NativeArray<int2> path, int j, int k)
     {
       int2 pt1, pt2;
       if (j == k)
@@ -318,7 +324,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoSquare(PathI path, int j, int k)
+    private void DoSquare(NativeArray<int2> path, int j, int k)
     {
       float2 vec;
       if (j == k)
@@ -364,7 +370,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoMiter(PathI path, int j, int k, float cosA)
+    private void DoMiter(NativeArray<int2> path, int j, int k, float cosA)
     {
       float q = _groupDelta / (cosA + 1);
 
@@ -372,7 +378,7 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void DoRound(PathI path, int j, int k, float angle)
+    private void DoRound(NativeArray<int2> path, int j, int k, float angle)
     {
       if (DeltaCallback != null)
       {
@@ -406,10 +412,10 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void BuildNormals(PathI path)
+    private void BuildNormals(NativeArray<int2> path)
     {
-      int cnt = path.Count;
       _normals.Clear();
+      int cnt = path.Length;
       if (cnt == 0) return;
       _normals.EnsureCapacity(cnt);
       for (int i = 0; i < cnt - 1; i++)
@@ -417,7 +423,7 @@ namespace Clipper
       _normals.Add(GetUnitNormal(path[cnt - 1], path[0]));
     }
 
-    private void OffsetPoint(Group group, PathI path, int j, ref int k)
+    private void OffsetPoint(Group group, NativeArray<int2> path, int j, ref int k)
     {
       if (path[j].Equals(path[k])) { k = j; return; }
 
@@ -481,28 +487,28 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void OffsetPolygon(Group group, PathI path)
+    private void OffsetPolygon(Group group, NativeArray<int2> path)
     {
       pathOut = new PathI();
-      int cnt = path.Count, prev = cnt - 1;
+      int cnt = path.Length, prev = cnt - 1;
       for (int i = 0; i < cnt; i++)
         OffsetPoint(group, path, i, ref prev);
       _solution.Add(pathOut);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private void OffsetOpenJoined(Group group, PathI path)
+    private void OffsetOpenJoined(Group group, NativeArray<int2> path)
     {
       OffsetPolygon(group, path);
-      path = Clipper.ReversePath(path);
+      path.Reverse();
       BuildNormals(path);
       OffsetPolygon(group, path);
     }
 
-    private void OffsetOpenPath(Group group, PathI path)
+    private void OffsetOpenPath(Group group, NativeArray<int2> path)
     {
       pathOut = new PathI();
-      int highI = path.Count - 1;
+      int highI = path.Length - 1;
 
       if (DeltaCallback != null) 
         _groupDelta = DeltaCallback(path, _normals, 0, 0);

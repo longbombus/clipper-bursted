@@ -10,6 +10,7 @@
 
 using System;
 using System.Collections.Generic;
+using Unity.Collections;
 using Unity.Mathematics;
 
 namespace Clipper
@@ -84,9 +85,9 @@ namespace Clipper
       useDelaunay = delaunay;
     }
 
-    private void AddPath(PathI path)
+    private void AddPath(NativeArray<int2> path)
     {
-      int len = path.Count;
+      int len = path.Length;
       if (len == 0) return;
 
       int i0 = 0, iPrev, iNext;
@@ -1000,7 +1001,7 @@ namespace Clipper
       vert.edges.RemoveAt(idx);
     }
 
-    private static bool FindLocMinIdx(PathI path, int len, ref int idx)
+    private static bool FindLocMinIdx(NativeArray<int2> path, int len, ref int idx)
     {
       if (len < 3) return false;
       int i0 = idx;

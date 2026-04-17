@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Mathematics;
 
 namespace Clipper
 {
@@ -32,17 +33,27 @@ namespace Clipper
 
 		[BurstCompile]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void AddRange(this NativeList<int> list, NativeArray<float> items, float scale)
+		public static void AddRange(this NativeList<int2> list, NativeArray<float2> items, float scale)
 		{
 			var oldLength = list.Length;
 			list.ResizeUninitialized(oldLength + items.Length);
 			for (int i = 0; i < items.Length; ++i)
-				list[oldLength + i] = (int)(items[i] * scale);
+				list[oldLength + i] = (int2)(items[i] * scale);
 		}
 
 		[BurstCompile]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void Add(this NativeSlicedList<int> list, NativeArray<float> slice, float scale)
+		public static void AddRange(this NativeList<float2> list, NativeArray<int2> items, float scale)
+		{
+			var oldLength = list.Length;
+			list.ResizeUninitialized(oldLength + items.Length);
+			for (int i = 0; i < items.Length; ++i)
+				list[oldLength + i] = (float2)items[i] * scale;
+		}
+
+		[BurstCompile]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Add(this NativeSlicedList<int2> list, NativeArray<float2> slice, float scale)
 		{
 			list.FinishSlice();
 			list.AddRange(slice, scale);
@@ -50,11 +61,47 @@ namespace Clipper
 
 		[BurstCompile]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void AddRange(this NativeSlicedList<int> list, NativeArray<float> slice, float scale)
+		public static void AddRange(this NativeSlicedList<int2> list, NativeArray<float2> slice, float scale)
 		{
-			list.EnsureItemsCapacity(list.ItemsCount + slice.Length);
+			var buffer = list.AddLastSliceItems(slice.Length);
 			for (int i = 0; i < slice.Length; ++i)
-				list.AddLastSliceItem((int)(slice[i] * scale));
+				buffer[i] = (int2)(slice[i] * scale);
+		}
+
+		[BurstCompile]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Add(this NativeSlicedList<float2> list, NativeArray<int2> items, float scale)
+		{
+			list.FinishSlice();
+			list.AddRange(items, scale);
+		}
+
+		[BurstCompile]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void AddRange(this NativeSlicedList<float2> list, NativeArray<int2> items, float scale)
+		{
+			var buffer = list.AddLastSliceItems(items.Length);
+			for (int i = 0; i < items.Length; ++i)
+				buffer[i] = (float2)items[i] * scale;
+		}
+
+		[BurstCompile]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void AddRange<T>(this NativeList<T> list, NativeArray<T> items, NativeBitArray filter)
+			where T : unmanaged
+		{
+			list.EnsureCapacity(list.Length + items.Length);
+			for (int i = 0; i < items.Length; ++i)
+				if (filter.IsSet(i))
+					list.Add(items[i]);
+		}
+
+		[BurstCompile]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static void Negate(this NativeBitArray bits)
+		{
+			for (int i = 0; i < bits.Length; ++i)
+				bits.Set(i, !bits.IsSet(i));
 		}
 	}
 }

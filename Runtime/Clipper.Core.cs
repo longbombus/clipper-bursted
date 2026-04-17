@@ -260,9 +260,9 @@ namespace Clipper
       );
     }
 
-    public static PointInPolygonResult PointInPolygon(int2 pt, PathI polygon)
+    public static PointInPolygonResult PointInPolygon(int2 pt, NativeArray<int2> polygon)
     {
-      int len = polygon.Count, start = 0;
+      int len = polygon.Length, start = 0;
       if (len < 3) return PointInPolygonResult.IsOutside;
 
       while (start < len && polygon[start].y == pt.y) start++;
