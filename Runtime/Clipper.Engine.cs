@@ -18,16 +18,15 @@ using Unity.Mathematics;
 
 namespace Clipper
 {
-
   // Vertex: a pre-clipping data structure. It is used to separate polygons
   // into ascending and descending 'bounds' (or sides) that start at local
   // minima and ascend to a local maxima, before descending again.
   [Flags]
   public enum PointInPolygonResult
   {
+    IsOutside = -1,
     IsOn = 0,
     IsInside = 1,
-    IsOutside = 2
   }
 
   [Flags]
@@ -462,13 +461,13 @@ namespace Clipper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsHeadingRightHorz(Active ae)
     {
-      return (double.IsNegativeInfinity(ae.dx));
+      return (float.IsNegativeInfinity(ae.dx));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool IsHeadingLeftHorz(Active ae)
     {
-      return (double.IsPositiveInfinity(ae.dx));
+      return (float.IsPositiveInfinity(ae.dx));
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -3108,8 +3107,7 @@ private void DoHorizontal(Active horz)
       AddPaths(paths, PathType.Clip);
     }
 
-    public bool Execute(ClipType clipType, FillRule fillRule,
-        PathsI solutionClosed, PathsI solutionOpen)
+    public bool Execute(ClipType clipType, FillRule fillRule, PathsI solutionClosed, PathsI solutionOpen)
     {
       solutionClosed.Clear();
       solutionOpen.Clear();
