@@ -3258,8 +3258,8 @@ private void DoHorizontal(Active horz)
       using var solutionOpenI = solutionOpen.IsCreated ? new NativeSlicedList<int2>(Allocator.Temp) : default;
 
       bool success = true;
-      solutionClosed.Clear();
-      solutionOpen.Clear();
+      if (solutionClosed.IsCreated) solutionClosed.Clear();
+      if (solutionOpen.IsCreated) solutionOpen.Clear();
       try
       {
         ExecuteInternal(clipType, fillRule);
