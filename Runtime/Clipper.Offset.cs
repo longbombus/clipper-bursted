@@ -193,7 +193,7 @@ namespace Clipper
       FillRule fillRule = pathsReversed ? FillRule.Negative : FillRule.Positive;
 
       // clean up self-intersections ...
-      Clipper64 c = new Clipper64();
+      ClipperI c = new ClipperI();
       c.PreserveCollinear = PreserveCollinear;
       c.ReverseSolution = ReverseSolution != pathsReversed;
 

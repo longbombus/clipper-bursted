@@ -85,7 +85,7 @@ namespace Clipper
     {
       PathsI solution = new PathsI();
       if (subject == null) return solution;
-      Clipper64 c = new Clipper64();
+      ClipperI c = new ClipperI();
       c.AddPaths(subject, PathType.Subject);
       if (clip != null)
         c.AddPaths(clip, PathType.Clip);
@@ -98,7 +98,7 @@ namespace Clipper
       PolyTree64 polytree, FillRule fillRule)
     {
       if (subject == null) return;
-      Clipper64 c = new Clipper64();
+      ClipperI c = new ClipperI();
       c.AddPaths(subject, PathType.Subject);
       if (clip != null)
         c.AddPaths(clip, PathType.Clip);
@@ -109,7 +109,7 @@ namespace Clipper
       FillRule fillRule, int precision = 2)
     {
       PathsF solution = new PathsF();
-      ClipperD c = new ClipperD(precision);
+      ClipperF c = new ClipperF(precision);
       c.AddSubject(subject);
       if (clip != null)
         c.AddClip(clip);
@@ -122,7 +122,7 @@ namespace Clipper
       PolyTreeD polytree, FillRule fillRule, int precision = 2)
     {
       if (subject == null) return;
-      ClipperD c = new ClipperD(precision);
+      ClipperF c = new ClipperF(precision);
       c.AddPaths(subject, PathType.Subject);
       if (clip != null)
         c.AddPaths(clip, PathType.Clip);

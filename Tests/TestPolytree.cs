@@ -69,7 +69,7 @@ namespace Clipper.Tests
 
       PolyTree64 solutionTree = new();
       PathsI solution_open = new();
-      Clipper64 clipper = new();
+      ClipperI clipper = new();
 
       PathI pointsOfInterestOutside = new()
       {
@@ -170,7 +170,7 @@ namespace Clipper.Tests
       };
       PolyTree64 solutionTree = new();
 
-      Clipper64 clipper = new();
+      ClipperI clipper = new();
       clipper.AddSubject(subject);
       clipper.Execute(ClipType.Union, FillRule.NonZero, solutionTree);
 

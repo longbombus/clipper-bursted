@@ -14,7 +14,7 @@ namespace Clipper.Benchmark
 
 		private void Update()
 		{
-			var clipper = new ClipperD(2);
+			var clipper = new ClipperF(2);
 
 			var anglePerCircle = math.TAU / circlesCount;
 

@@ -216,8 +216,12 @@ namespace Clipper
 
   internal static class ClipperEngine
   {
-    internal static void AddLocMin(Vertex vert, PathType polytype, bool isOpen,
-      List<LocalMinima> minimaList)
+    internal static void AddLocMin(
+      Vertex vert,
+      PathType polytype,
+      bool isOpen,
+      List<LocalMinima> minimaList
+    )
     {
       // make sure the vertex is added only once ...
       if ((vert.flags & VertexFlags.LocalMin) != VertexFlags.None) return;
@@ -230,96 +234,151 @@ namespace Clipper
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     internal static void EnsureCapacity<T>(this List<T> list, int minCapacity)
     {
-      if(list.Capacity < minCapacity)
+      if (list.Capacity < minCapacity)
         list.Capacity = minCapacity;
     }
 
-    internal static void AddPathsToVertexList(PathsI paths, PathType polytype, bool isOpen,
-      List<LocalMinima> minimaList, VertexPoolList vertexList)
+    internal static void AddPathsToVertexList(NativeSlicedList<int2> paths, PathType polytype, bool isOpen, List<LocalMinima> minimaList, VertexPoolList vertexList)
     {
       vertexList.EnsureCapacity(vertexList.Count + paths.ItemsCount);
 
       foreach (var path in paths)
+        AddPathToVertexList(path, polytype, isOpen, minimaList, vertexList);
+    }
+
+    internal static void AddPathsToVertexList(NativeSlicedList<float2> paths, float scale, PathType polytype, bool isOpen, List<LocalMinima> minimaList, VertexPoolList vertexList)
+    {
+      vertexList.EnsureCapacity(vertexList.Count + paths.ItemsCount);
+
+      foreach (var path in paths)
+        AddPathToVertexList(path, scale, polytype, isOpen, minimaList, vertexList);
+    }
+
+    internal static void AddPathToVertexList(NativeArray<int2> path, PathType polytype, bool isOpen, List<LocalMinima> minimaList, VertexPoolList vertexList)
+    {
+      AddPathToVertexListBegin(path, vertexList, out var first, out var preLast, out var last);
+      AddPathToVertexListEnd(polytype, isOpen, minimaList, first, preLast, last);
+    }
+
+    internal static void AddPathToVertexList(NativeArray<float2> path, float scale, PathType polytype, bool isOpen, List<LocalMinima> minimaList, VertexPoolList vertexList)
+    {
+      AddPathToVertexListBegin(path, scale, vertexList, out var first, out var preLast, out var last);
+      AddPathToVertexListEnd(polytype, isOpen, minimaList, first, preLast, last);
+    }
+
+    private static void AddPathToVertexListBegin(NativeArray<int2> path, VertexPoolList vertexList, out Vertex first, out Vertex preLast, out Vertex last)
+    {
+      vertexList.EnsureCapacity(vertexList.Count + path.Length);
+
+      first = vertexList.Add(path[0], VertexFlags.None, null);
+      preLast = first;
+      last = first;
+
+      for (var i = 1; i < path.Length; ++i)
       {
-        Vertex? v0 = null, prev_v = null, curr_v;
-        foreach (int2 pt in path)
-        {
-          if (v0 == null)
-          {
-            v0 = vertexList.Add(pt, VertexFlags.None, null);
-            prev_v = v0;
-          }
-          else if (!prev_v!.pt.Equals(pt)) // ie skips duplicates
-          {
-            curr_v = vertexList.Add(pt, VertexFlags.None, prev_v);
-            prev_v.next = curr_v;
-            prev_v = curr_v;
-          }
-        }
-        if (prev_v?.prev == null) continue;
-        if (!isOpen && prev_v.pt.Equals(v0!.pt)) prev_v = prev_v.prev;
-        prev_v.next = v0;
-        v0!.prev = prev_v;
-        if (!isOpen && prev_v.next == prev_v) continue;
+        var pt = path[i];
+        if (preLast.pt.Equals(pt))
+          continue; // ie skips duplicates
 
-        // OK, we have a valid path
-        bool going_up;
-        if (isOpen)
+        last = vertexList.Add(pt, VertexFlags.None, preLast);
+        preLast.next = last;
+        preLast = last;
+      }
+    }
+
+    private static void AddPathToVertexListBegin(NativeArray<float2> path, float scale, VertexPoolList vertexList, out Vertex first, out Vertex preLast, out Vertex last)
+    {
+      vertexList.EnsureCapacity(vertexList.Count + path.Length);
+
+      first = vertexList.Add((int2)(path[0] * scale), VertexFlags.None, null);
+      preLast = first;
+      last = first;
+
+      for (var i = 1; i < path.Length; ++i)
+      {
+        var pt = (int2)(path[i] * scale);
+        if (preLast.pt.Equals(pt))
+          continue; // ie skips duplicates
+
+        last = vertexList.Add(pt, VertexFlags.None, preLast);
+        preLast.next = last;
+        preLast = last;
+      }
+    }
+
+    private static void AddPathToVertexListEnd(
+      PathType polytype,
+      bool isOpen,
+      List<LocalMinima> minimaList,
+      Vertex first,
+      Vertex preLast,
+      Vertex last
+    )
+    {
+      if (preLast?.prev == null) return;
+      if (!isOpen && preLast.pt.Equals(first!.pt)) preLast = preLast.prev;
+      preLast.next = first;
+      first!.prev = preLast;
+      if (!isOpen && preLast.next == preLast) return;
+
+      // OK, we have a valid path
+      bool going_up;
+      if (isOpen)
+      {
+        last = first.next;
+        while (last != first && last!.pt.y == first.pt.y)
+          last = last.next;
+        going_up = last.pt.y <= first.pt.y;
+        if (going_up)
         {
-          curr_v = v0.next;
-          while (curr_v != v0 && curr_v!.pt.y == v0.pt.y)
-            curr_v = curr_v.next;
-          going_up = curr_v.pt.y <= v0.pt.y;
-          if (going_up)
-          {
-            v0.flags = VertexFlags.OpenStart;
-            AddLocMin(v0, polytype, true, minimaList);
-          }
-          else
-            v0.flags = VertexFlags.OpenStart | VertexFlags.LocalMax;
+          first.flags = VertexFlags.OpenStart;
+          AddLocMin(first, polytype, true, minimaList);
         }
-        else // closed path
+        else
+          first.flags = VertexFlags.OpenStart | VertexFlags.LocalMax;
+      }
+      else // closed path
+      {
+        preLast = first.prev;
+        while (preLast != first && preLast!.pt.y == first.pt.y)
+          preLast = preLast.prev;
+        if (preLast == first)
+          return; // only open paths can be completely flat
+        going_up = preLast.pt.y > first.pt.y;
+      }
+
+      bool going_up0 = going_up;
+      preLast = first;
+      last = first.next;
+      while (last != first)
+      {
+        if (last!.pt.y > preLast.pt.y && going_up)
         {
-          prev_v = v0.prev;
-          while (prev_v != v0 && prev_v!.pt.y == v0.pt.y)
-            prev_v = prev_v.prev;
-          if (prev_v == v0)
-            continue; // only open paths can be completely flat
-          going_up = prev_v.pt.y > v0.pt.y;
+          preLast.flags |= VertexFlags.LocalMax;
+          going_up = false;
+        }
+        else if (last.pt.y < preLast.pt.y && !going_up)
+        {
+          going_up = true;
+          AddLocMin(preLast, polytype, isOpen, minimaList);
         }
 
-        bool going_up0 = going_up;
-        prev_v = v0;
-        curr_v = v0.next;
-        while (curr_v != v0)
-        {
-          if (curr_v!.pt.y > prev_v.pt.y && going_up)
-          {
-            prev_v.flags |= VertexFlags.LocalMax;
-            going_up = false;
-          }
-          else if (curr_v.pt.y < prev_v.pt.y && !going_up)
-          {
-            going_up = true;
-            AddLocMin(prev_v, polytype, isOpen, minimaList);
-          }
-          prev_v = curr_v;
-          curr_v = curr_v.next;
-        }
+        preLast = last;
+        last = last.next;
+      }
 
-        if (isOpen)
-        {
-          prev_v.flags |= VertexFlags.OpenEnd;
-          if (going_up)
-            prev_v.flags |= VertexFlags.LocalMax;
-          else
-            AddLocMin(prev_v, polytype, isOpen, minimaList);
-        }
-        else if (going_up != going_up0)
-        {
-          if (going_up0) AddLocMin(prev_v, polytype, false, minimaList);
-          else prev_v.flags |= VertexFlags.LocalMax;
-        }
+      if (isOpen)
+      {
+        preLast.flags |= VertexFlags.OpenEnd;
+        if (going_up)
+          preLast.flags |= VertexFlags.LocalMax;
+        else
+          AddLocMin(preLast, polytype, isOpen, minimaList);
+      }
+      else if (going_up != going_up0)
+      {
+        if (going_up0) AddLocMin(preLast, polytype, false, minimaList);
+        else preLast.flags |= VertexFlags.LocalMax;
       }
     }
   }
@@ -782,34 +841,49 @@ namespace Clipper
     {
       return _minimaList[_currentLocMin++];
     }
-   
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddSubject(PathI path)
+    public void AddSubject(NativeArray<int2> path)
+      => AddPath(path, PathType.Subject);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddSubject(NativeSlicedList<int2> paths)
+      => AddPaths(paths, PathType.Subject);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddOpenSubject(NativeArray<int2> path)
+      => AddPath(path, PathType.Subject, true);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddOpenSubject(NativeSlicedList<int2> path)
+      => AddPaths(path, PathType.Subject, true);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddClip(NativeArray<int2> path)
+      => AddPath(path, PathType.Clip);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddClip(NativeSlicedList<int2> path)
+      => AddPaths(path, PathType.Clip);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddPath(NativeArray<int2> path, PathType polytype, bool isOpen = false)
     {
-      AddPath(path, PathType.Subject);
+      if (isOpen) _hasOpenPaths = true;
+      _isSortedMinimaList = false;
+      ClipperEngine.AddPathToVertexList(path, polytype, isOpen, _minimaList, _vertexList);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddOpenSubject(PathI path)
+    public void AddPath(NativeArray<float2> path, float scale, PathType polytype, bool isOpen = false)
     {
-      AddPath(path, PathType.Subject, true);
+      if (isOpen) _hasOpenPaths = true;
+      _isSortedMinimaList = false;
+      ClipperEngine.AddPathToVertexList(path, scale, polytype, isOpen, _minimaList, _vertexList);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddClip(PathI path)
-    {
-      AddPath(path, PathType.Clip);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected void AddPath(PathI path, PathType polytype, bool isOpen = false)
-    {
-      PathsI tmp = new PathsI(1) { path };
-      AddPaths(tmp, polytype, isOpen);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected void AddPaths(PathsI paths, PathType polytype, bool isOpen = false)
+    public void AddPaths(NativeSlicedList<int2> paths, PathType polytype, bool isOpen = false)
     {
       if (isOpen) _hasOpenPaths = true;
       _isSortedMinimaList = false;
@@ -817,7 +891,15 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected void AddReuseableData(ReuseableDataContainer64 reuseableData)
+    public void AddPaths(NativeSlicedList<float2> paths, float scale, PathType polytype, bool isOpen = false)
+    {
+      if (isOpen) _hasOpenPaths = true;
+      _isSortedMinimaList = false;
+      ClipperEngine.AddPathsToVertexList(paths, scale, polytype, isOpen, _minimaList, _vertexList);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public void AddReuseableData(ReuseableDataContainer64 reuseableData)
     {
       if (reuseableData._minimaList.Count == 0) return;
       // nb: reuseableData will continue to own the vertices, so it's important
@@ -3050,44 +3132,8 @@ private void DoHorizontal(Active horz)
   } // ClipperBase class
 
 
-  public class Clipper64 : ClipperBase
+  public class ClipperI : ClipperBase
   {
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal new void AddPath(PathI path, PathType polytype, bool isOpen = false)
-    {
-      base.AddPath(path, polytype, isOpen);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public new void AddReuseableData(ReuseableDataContainer64 reuseableData)
-    {
-      base.AddReuseableData(reuseableData);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal new void AddPaths(PathsI paths, PathType polytype, bool isOpen = false)
-    {
-      base.AddPaths(paths, polytype, isOpen);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddSubject(PathsI paths)
-    {
-      AddPaths(paths, PathType.Subject);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddOpenSubject(PathsI paths)
-    {
-      AddPaths(paths, PathType.Subject, true);
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddClip(PathsI paths)
-    {
-      AddPaths(paths, PathType.Clip);
-    }
-
     public bool Execute(ClipType clipType, FillRule fillRule, PathsI solutionClosed, PathsI solutionOpen)
     {
       solutionClosed.Clear();
@@ -3139,71 +3185,58 @@ private void DoHorizontal(Active horz)
 
   } // Clipper64 class
 
-  public class ClipperD : ClipperBase
+  public class ClipperF : ClipperBase
   {
-    private const string precision_range_error = "Error: Precision is out of range.";
+    private readonly float intToFloatRatio;
+    private readonly float floatToIntRatio;
 
-    private readonly float _scale;
-    private readonly float _invScale;
-
-    public ClipperD(int roundingDecimalPrecision = 2)
+    public ClipperF(float precision)
     {
-      if (roundingDecimalPrecision < -8 || roundingDecimalPrecision > 8)
-        throw new ClipperLibException(precision_range_error);
-      _scale = math.exp10(roundingDecimalPrecision);
-      _invScale = math.rcp(_scale);
+      if (precision < Const.PrecisionMin || precision > Const.PrecisionMax)
+        throw new ClipperLibException($"Precision {precision} is out of range");
+
+      intToFloatRatio = precision;
+      floatToIntRatio = math.rcp(precision);
+    }
+
+    public ClipperF(int decimalOrderPrecision = 2)
+      : this(math.exp10(decimalOrderPrecision))
+    {
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddPath(PathF path, PathType polytype, bool isOpen = false)
-    {
-      base.AddPath(Clipper.ScalePath64(path, _scale), polytype, isOpen);
-    }
+    public void AddPath(NativeArray<float2> path, PathType polytype, bool isOpen = false)
+      => base.AddPath(path, floatToIntRatio, polytype, isOpen);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddPaths(PathsF paths, PathType polytype, bool isOpen = false)
-    {
-      base.AddPaths(Clipper.ScalePaths64(paths, _scale), polytype, isOpen);
-    }
+    public void AddPaths(NativeSlicedList<float2> paths, PathType polytype, bool isOpen = false)
+      => base.AddPaths(paths, floatToIntRatio, polytype, isOpen);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddSubject(PathF path)
-    {
-      AddPath(path, PathType.Subject);
-    }
+    public void AddSubject(NativeArray<float2> path)
+      => AddPath(path, floatToIntRatio, PathType.Subject);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddOpenSubject(PathF path)
-    {
-      AddPath(path, PathType.Subject, true);
-    }
+    public void AddSubject(NativeSlicedList<float2> paths)
+      => AddPaths(paths, floatToIntRatio, PathType.Subject);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddClip(PathF path)
-    {
-      AddPath(path, PathType.Clip);
-    }
+    public void AddOpenSubject(NativeArray<float2> path)
+      => AddPath(path, floatToIntRatio, PathType.Subject, true);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddSubject(PathsF paths)
-    {
-      AddPaths(paths, PathType.Subject);
-    }
+    public void AddOpenSubject(NativeSlicedList<float2> paths)
+      => AddPaths(paths, floatToIntRatio, PathType.Subject, true);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddOpenSubject(PathsF paths)
-    {
-      AddPaths(paths, PathType.Subject, true);
-    }
+    public void AddClip(NativeArray<float2> path)
+      => AddPath(path, floatToIntRatio, PathType.Clip);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddClip(PathsF paths)
-    {
-      AddPaths(paths, PathType.Clip);
-    }
+    public void AddClip(NativeSlicedList<float2> paths)
+      => AddPaths(paths, floatToIntRatio, PathType.Clip);
 
-    public bool Execute(ClipType clipType, FillRule fillRule,
-        PathsF solutionClosed, PathsF solutionOpen)
+    public bool Execute(ClipType clipType, FillRule fillRule, PathsF solutionClosed, PathsF solutionOpen)
     {
       PathsI solClosed64 = new PathsI(), solOpen64 = new PathsI();
 
@@ -3225,10 +3258,10 @@ private void DoHorizontal(Active horz)
 
       solutionClosed.EnsureCapacity(solClosed64.Count);
       foreach (var path in solClosed64)
-        solutionClosed.Add(path, _invScale);
+        solutionClosed.Add(path, intToFloatRatio);
       solutionOpen.EnsureCapacity(solOpen64.Count);
       foreach (var path in solOpen64)
-        solutionOpen.Add(path, _invScale);
+        solutionOpen.Add(path, intToFloatRatio);
 
       return true;
     }
@@ -3244,7 +3277,7 @@ private void DoHorizontal(Active horz)
       polytree.Clear();
       openPaths.Clear();
       _using_polytree = true;
-      (polytree as PolyPathD).Scale = _scale;
+      (polytree as PolyPathD).Scale = floatToIntRatio;
 
       PathsI oPaths = new PathsI();
       bool success = true;
@@ -3262,7 +3295,7 @@ private void DoHorizontal(Active horz)
       if (oPaths.Count <= 0) return true;
       openPaths.EnsureCapacity(oPaths.Count);
       foreach (var path in oPaths)
-        openPaths.Add(path, _invScale);
+        openPaths.Add(path, intToFloatRatio);
 
       return true;
     }

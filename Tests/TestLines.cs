@@ -10,7 +10,7 @@ namespace Clipper.Tests
     {
       for (int i = 0; i <= 16; i++)
       {
-        Clipper64 c64 = new();
+        ClipperI c64 = new();
         PathsI subj = new(), subj_open = new(), clip = new();
         PathsI solution = new(), solution_open = new();
 
