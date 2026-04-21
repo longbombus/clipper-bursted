@@ -14,6 +14,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using Unity.Collections;
 using Unity.Mathematics;
 
 namespace Clipper
@@ -2962,7 +2963,8 @@ private void DoHorizontal(Active horz)
       if (outrec.pts == null ||
         !BuildPath(outrec.pts, ReverseSolution, false, outrec.path))
           return false;
-      outrec.bounds = InternalClipper.GetBounds(outrec.path);
+
+      ((NativeArray<int2>)outrec.path).GetBounds(out outrec.bounds);
       return true;
     }
 
@@ -3045,27 +3047,6 @@ private void DoHorizontal(Active horz)
           RecursiveCheckOwners(outrec, polytree);
       }
     }
-
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public int4 GetBounds()
-    {
-      int4 bounds = Const.InvalidRectI;
-      foreach (Vertex t in _vertexList)
-      {
-        Vertex v = t;
-        do
-        {
-          if (v.pt.x < bounds.x) bounds.x = v.pt.x;
-          if (v.pt.x > bounds.z) bounds.z = v.pt.x;
-          if (v.pt.y < bounds.z) bounds.z = v.pt.y;
-          if (v.pt.y > bounds.w) bounds.w = v.pt.y;
-          v = v.next!;
-        } while (v != t);
-      }
-      return bounds.IsEmpty() ? new int4(0, 0, 0, 0) : bounds;
-    }
-
   } // ClipperBase class
 
 

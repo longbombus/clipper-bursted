@@ -351,59 +351,6 @@ namespace Clipper
       return res;
     }
 
-    public static int4 GetBounds(NativeArray<int2> path)
-    {
-      int4 result = Const.InvalidRectI;
-      foreach (int2 pt in path)
-      {
-        if (pt.x < result.x) result.x = pt.x;
-        if (pt.x > result.z) result.z = pt.x;
-        if (pt.y < result.y) result.y = pt.y;
-        if (pt.y > result.w) result.w = pt.y;
-      }
-      return result.IsValid() ? result : new int4();
-    }
-
-    public static int4 GetBounds(NativeSlicedList<int2> paths)
-    {
-      int4 result = Const.InvalidRectI;
-      foreach (var pt in paths.AsArray())
-      {
-        if (pt.x < result.x) result.x = pt.x;
-        if (pt.x > result.z) result.z = pt.x;
-        if (pt.y < result.y) result.y = pt.y;
-        if (pt.y > result.w) result.w = pt.y;
-      }
-      return result.IsValid() ? result : new int4();
-    }
-
-    public static float4 GetBounds(PathF path)
-    {
-      float4 result = Const.InvalidRectF;
-      foreach (float2 pt in path)
-      {
-        if (pt.x < result.x) result.x = pt.x;
-        if (pt.x > result.z) result.z = pt.x;
-        if (pt.y < result.y) result.y = pt.y;
-        if (pt.y > result.w) result.w = pt.y;
-      }
-      return result.IsValid() ? result : new float4();
-    }
-
-    public static float4 GetBounds(PathsF paths)
-    {
-      float4 result = Const.InvalidRectF;
-      foreach (var path in paths)
-        foreach (float2 pt in path)
-        {
-          if (pt.x < result.x) result.x = pt.x;
-          if (pt.x > result.z) result.z = pt.x;
-          if (pt.y < result.y) result.y = pt.y;
-          if (pt.y > result.w) result.w = pt.y;
-        }
-      return result.IsValid() ? result : new float4();
-    }
-
     public static PathI MakePath(int[] arr)
     {
       int len = arr.Length / 2;

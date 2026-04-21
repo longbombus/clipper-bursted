@@ -224,20 +224,6 @@ namespace Clipper
       }
     }
 
-    public static int4 GetBounds(PathI path)
-    {
-      if (path.Count == 0) return new int4();
-      int4 result = Const.InvalidRectI;
-      foreach (int2 pt in path)
-      {
-        if (pt.x < result.x) result.x = pt.x;
-        if (pt.x > result.z) result.z = pt.x;
-        if (pt.y < result.y) result.y = pt.y;
-        if (pt.y > result.w) result.w = pt.y;
-      }
-      return result;
-    }
-
     public static int2 GetClosestPtOnSegment(int2 offPt,
     int2 seg1, int2 seg2)
     {
@@ -327,7 +313,7 @@ namespace Clipper
       return val == 0 ? PointInPolygonResult.IsOutside : PointInPolygonResult.IsInside;
     }
 
-    public static bool Path2ContainsPath1(PathI path1, PathI path2)
+    public static bool Path2ContainsPath1(NativeArray<int2> path1, NativeArray<int2> path2)
     {
       // we need to make some accommodation for rounding errors
       // so we won't jump if the first vertex is found outside
@@ -348,7 +334,8 @@ namespace Clipper
         }
       }
       // since path1's location is still equivocal, check its midpoint
-      int2 mp = GetBounds(path1).MidPoint();
+      path1.GetBounds(out var path1Bounds);
+      int2 mp = path1Bounds.MidPoint();
       return InternalClipper.PointInPolygon(mp, path2) != PointInPolygonResult.IsOutside;
     }
 
