@@ -22,9 +22,6 @@ namespace Clipper
 {
   public static class Clipper
   {
-    public static int4 InvalidRectI => new int4(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
-    public static readonly float4 InvalidRectF = new float4(float.MaxValue, float.MaxValue, float.MinValue, float.MinValue);
-
     public static PathsI Intersect(PathsI subject, PathsI clip, FillRule fillRule)
     {
       return BooleanOp(ClipType.Intersection, subject, clip, fillRule);
@@ -356,7 +353,7 @@ namespace Clipper
 
     public static int4 GetBounds(NativeArray<int2> path)
     {
-      int4 result = InvalidRectI;
+      int4 result = Const.InvalidRectI;
       foreach (int2 pt in path)
       {
         if (pt.x < result.x) result.x = pt.x;
@@ -369,7 +366,7 @@ namespace Clipper
 
     public static int4 GetBounds(NativeSlicedList<int2> paths)
     {
-      int4 result = InvalidRectI;
+      int4 result = Const.InvalidRectI;
       foreach (var pt in paths.AsArray())
       {
         if (pt.x < result.x) result.x = pt.x;
@@ -382,7 +379,7 @@ namespace Clipper
 
     public static float4 GetBounds(PathF path)
     {
-      float4 result = InvalidRectF;
+      float4 result = Const.InvalidRectF;
       foreach (float2 pt in path)
       {
         if (pt.x < result.x) result.x = pt.x;
@@ -395,7 +392,7 @@ namespace Clipper
 
     public static float4 GetBounds(PathsF paths)
     {
-      float4 result = InvalidRectF;
+      float4 result = Const.InvalidRectF;
       foreach (var path in paths)
         foreach (float2 pt in path)
         {

@@ -3050,7 +3050,7 @@ private void DoHorizontal(Active horz)
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int4 GetBounds()
     {
-      int4 bounds = Clipper.InvalidRectI;
+      int4 bounds = Const.InvalidRectI;
       foreach (Vertex t in _vertexList)
       {
         Vertex v = t;

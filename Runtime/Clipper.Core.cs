@@ -45,14 +45,6 @@ namespace Clipper
 
   internal static class InternalClipper
   {
-    public const long MaxInt64 = 9223372036854775807;
-    public const long MaxCoord = MaxInt64 / 4;
-    public const double max_coord = MaxCoord;
-    public const double min_coord = -MaxCoord;
-    public const long Invalid64 = MaxInt64;
-
-    internal const double floatingPointTolerance = 1E-12;
-
     public static int CrossProductSign(int2 pt1, int2 pt2, int2 pt3)
     {
       int a = pt2.x - pt1.x;
@@ -126,11 +118,13 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    internal static long CheckCastInt64(double val)
-    {
-      if ((val >= max_coord) || (val <= min_coord)) return Invalid64;
-      return (long)Math.Round(val, MidpointRounding.AwayFromZero);
-    }
+    internal static int SafeCastInt(float val)
+      => val switch
+      {
+        < Const.MinCoordF => Const.MinCoordI,
+        > Const.MaxCoordF => Const.MaxCoordI,
+        _ => (int)math.round(val)
+      };
 
     // GetLineIntersectPt - a 'true' result is non-parallel. The 'ip' will also
     // be constrained to seg1. However, it's possible that 'ip' won't be inside
@@ -233,7 +227,7 @@ namespace Clipper
     public static int4 GetBounds(PathI path)
     {
       if (path.Count == 0) return new int4();
-      int4 result = Clipper.InvalidRectI;
+      int4 result = Const.InvalidRectI;
       foreach (int2 pt in path)
       {
         if (pt.x < result.x) result.x = pt.x;
