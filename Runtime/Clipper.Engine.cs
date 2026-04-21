@@ -2967,10 +2967,12 @@ private void DoHorizontal(Active horz)
       }
     }
 
-    internal static bool BuildPath(OutPt? op, bool reverse, bool isOpen, PathI path)
+    internal static bool BuildPath(OutPt? op, bool reverse, bool isOpen, NativeList<int2> path)
     {
-      if (op == null || op.next == op || (!isOpen && op.next == op.prev)) return false;
-      path.Clear();
+      if (op == null || op.next == op || (!isOpen && op.next == op.prev))
+        return false;
+
+      int pathInitialLength = path.Length;
 
       int2 lastPt;
       OutPt op2;
@@ -3000,15 +3002,23 @@ private void DoHorizontal(Active horz)
           op2 = op2.next!;
       }
 
-      return path.Count != 3 || isOpen || !IsVerySmallTriangle(op2);
+      int addedLength = path.Length - pathInitialLength;
+      if (addedLength == 3 && !isOpen && IsVerySmallTriangle(op2))
+      {
+        path.Resize(pathInitialLength, NativeArrayOptions.UninitializedMemory);
+        return false;
+      }
+
+      return true;
     }
 
-    protected bool BuildPaths(PathsI solutionClosed, PathsI solutionOpen)
+    protected bool BuildPaths(NativeSlicedList<int2> solutionClosed, NativeSlicedList<int2> solutionOpen)
     {
-      solutionClosed.Clear();
-      solutionOpen.Clear();
-      solutionClosed.EnsureCapacity(_outrecList.Count);
-      solutionOpen.EnsureCapacity(_outrecList.Count);
+      if (solutionClosed.IsCreated)
+        solutionClosed.EnsureItemsCapacity(_outrecList.Count);
+
+      if (solutionOpen.IsCreated)
+        solutionOpen.EnsureItemsCapacity(_outrecList.Count);
       
       int i = 0;
       // _outrecList.Count is not static here because
@@ -3018,19 +3028,24 @@ private void DoHorizontal(Active horz)
         OutRec outrec = _outrecList[i++];
         if (outrec.pts == null) continue;
 
-        PathI path = new PathI(outrec.outPtCount);
         if (outrec.isOpen)
         {
-          if (BuildPath(outrec.pts, ReverseSolution, true, path))
-              solutionOpen.Add(path);
+          if (solutionOpen.IsCreated)
+          {
+            solutionOpen.FinishSlice();
+            BuildPath(outrec.pts, ReverseSolution, true, solutionOpen.AsList());
+          }
         }
         else
         {
           CleanCollinear(outrec);
           // closed paths should always return a Positive orientation
           // except when ReverseSolution == true
-          if (BuildPath(outrec.pts, ReverseSolution, false, path))
-            solutionClosed.Add(path);
+          if (solutionClosed.IsCreated)
+          {
+            solutionClosed.FinishSlice();
+            BuildPath(outrec.pts, ReverseSolution, false, solutionClosed.AsList());
+          }
         }
       }
       return true;
@@ -3042,8 +3057,7 @@ private void DoHorizontal(Active horz)
       if (outrec.pts == null) return false;
       if (!outrec.bounds.IsEmpty()) return true;
       CleanCollinear(outrec);
-      if (outrec.pts == null ||
-        !BuildPath(outrec.pts, ReverseSolution, false, outrec.path))
+      if (outrec.pts == null || !BuildPath(outrec.pts, ReverseSolution, false, outrec.path))
           return false;
 
       ((NativeArray<int2>)outrec.path).GetBounds(out outrec.bounds);
@@ -3102,12 +3116,15 @@ private void DoHorizontal(Active horz)
         outrec.polypath = polypath.AddChild(outrec.path);
     }
 
-    protected void BuildTree(PolyPathBase polytree, PathsI solutionOpen)
+    protected void BuildTree(PolyPathBase polytree, NativeSlicedList<int2> solutionOpen)
     {
       polytree.Clear();
-      solutionOpen.Clear();
-      if (_hasOpenPaths)
-        solutionOpen.EnsureCapacity(_outrecList.Count);
+      if (solutionOpen.IsCreated)
+      {
+        solutionOpen.Clear();
+        if (_hasOpenPaths)
+          solutionOpen.EnsureItemsCapacity(_outrecList.Count);
+      }
 
       int i = 0;
       // _outrecList.Count is not static here because
@@ -3120,10 +3137,12 @@ private void DoHorizontal(Active horz)
 
         if (outrec.isOpen)
         {
-          PathI open_path = new PathI(outrec.outPtCount);
-          if (BuildPath(outrec.pts, ReverseSolution, true, open_path))
-            solutionOpen.Add(open_path);
-          continue;
+          if (solutionOpen.IsCreated)
+          {
+            solutionOpen.FinishSlice();
+            if (BuildPath(outrec.pts, ReverseSolution, true, solutionOpen.AsList()))
+              continue;
+          }
         }
         if (CheckBounds(outrec))
           RecursiveCheckOwners(outrec, polytree);
@@ -3134,10 +3153,11 @@ private void DoHorizontal(Active horz)
 
   public class ClipperI : ClipperBase
   {
-    public bool Execute(ClipType clipType, FillRule fillRule, PathsI solutionClosed, PathsI solutionOpen)
+    public bool Execute(ClipType clipType, FillRule fillRule, NativeSlicedList<int2> solutionClosed, NativeSlicedList<int2> solutionOpen)
     {
-      solutionClosed.Clear();
-      solutionOpen.Clear();
+      if (solutionClosed.IsCreated) solutionClosed.Clear();
+      if (solutionOpen.IsCreated) solutionOpen.Clear();
+
       try
       {
         ExecuteInternal(clipType, fillRule);
@@ -3153,15 +3173,14 @@ private void DoHorizontal(Active horz)
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Execute(ClipType clipType, FillRule fillRule, PathsI solutionClosed)
-    {
-      return Execute(clipType, fillRule, solutionClosed, new PathsI());
-    }
+    public bool Execute(ClipType clipType, FillRule fillRule, NativeSlicedList<int2> solutionClosed)
+      => Execute(clipType, fillRule, solutionClosed, default);
 
-    public bool Execute(ClipType clipType, FillRule fillRule, PolyTree64 polytree, PathsI openPaths)
+    public bool Execute(ClipType clipType, FillRule fillRule, PolyTree64 polytree, NativeSlicedList<int2> openPaths)
     {
       polytree.Clear();
-      openPaths.Clear();
+      if (openPaths.IsCreated) openPaths.Clear();
+
       _using_polytree = true;
       try
       {
@@ -3179,10 +3198,7 @@ private void DoHorizontal(Active horz)
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public bool Execute(ClipType clipType, FillRule fillRule, PolyTree64 polytree)
-    {
-      return Execute(clipType, fillRule, polytree, new PathsI());
-    }
-
+      => Execute(clipType, fillRule, polytree, default);
   } // Clipper64 class
 
   public class ClipperF : ClipperBase
@@ -3199,7 +3215,7 @@ private void DoHorizontal(Active horz)
       floatToIntRatio = math.rcp(precision);
     }
 
-    public ClipperF(int decimalOrderPrecision = 2)
+    public ClipperF(int decimalOrderPrecision = -2)
       : this(math.exp10(decimalOrderPrecision))
     {
     }
@@ -3236,9 +3252,10 @@ private void DoHorizontal(Active horz)
     public void AddClip(NativeSlicedList<float2> paths)
       => AddPaths(paths, floatToIntRatio, PathType.Clip);
 
-    public bool Execute(ClipType clipType, FillRule fillRule, PathsF solutionClosed, PathsF solutionOpen)
+    public bool Execute(ClipType clipType, FillRule fillRule, NativeSlicedList<float2> solutionClosed, NativeSlicedList<float2> solutionOpen)
     {
-      PathsI solClosed64 = new PathsI(), solOpen64 = new PathsI();
+      using var solutionClosedI = solutionClosed.IsCreated ? new NativeSlicedList<int2>(Allocator.Temp) : default;
+      using var solutionOpenI = solutionOpen.IsCreated ? new NativeSlicedList<int2>(Allocator.Temp) : default;
 
       bool success = true;
       solutionClosed.Clear();
@@ -3246,7 +3263,7 @@ private void DoHorizontal(Active horz)
       try
       {
         ExecuteInternal(clipType, fillRule);
-        BuildPaths(solClosed64, solOpen64);
+        BuildPaths(solutionClosedI, solutionOpenI);
       }
       catch
       {
@@ -3256,35 +3273,42 @@ private void DoHorizontal(Active horz)
       ClearSolutionOnly();
       if (!success) return false;
 
-      solutionClosed.EnsureCapacity(solClosed64.Count);
-      foreach (var path in solClosed64)
-        solutionClosed.Add(path, intToFloatRatio);
-      solutionOpen.EnsureCapacity(solOpen64.Count);
-      foreach (var path in solOpen64)
-        solutionOpen.Add(path, intToFloatRatio);
+      if (solutionClosed.IsCreated)
+      {
+        solutionClosed.EnsureItemsCapacity(solutionClosedI.ItemsCount);
+        foreach (var path in solutionClosedI)
+          solutionClosed.Add(path, intToFloatRatio);
+      }
+
+      if (solutionOpenI.IsCreated)
+      {
+        solutionOpen.EnsureItemsCapacity(solutionOpenI.ItemsCount);
+        foreach (var path in solutionOpenI)
+          solutionOpen.Add(path, intToFloatRatio);
+      }
 
       return true;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public bool Execute(ClipType clipType, FillRule fillRule, PathsF solutionClosed)
+    public bool Execute(ClipType clipType, FillRule fillRule, NativeSlicedList<float2> solutionClosed)
     {
-      return Execute(clipType, fillRule, solutionClosed, new PathsF());
+      return Execute(clipType, fillRule, solutionClosed, default);
     }
 
-    public bool Execute(ClipType clipType, FillRule fillRule, PolyTreeD polytree, PathsF openPaths)
+    public bool Execute(ClipType clipType, FillRule fillRule, PolyTreeD polytree, NativeSlicedList<float2> solutionOpen)
     {
       polytree.Clear();
-      openPaths.Clear();
+      solutionOpen.Clear();
       _using_polytree = true;
       (polytree as PolyPathD).Scale = floatToIntRatio;
 
-      PathsI oPaths = new PathsI();
+      using var solutionOpenI = solutionOpen.IsCreated ? new NativeSlicedList<int2>(Allocator.Temp) : default;
       bool success = true;
       try
       {
         ExecuteInternal(clipType, fillRule);
-        BuildTree(polytree, oPaths);
+        BuildTree(polytree, solutionOpenI);
       }
       catch
       {
@@ -3292,17 +3316,20 @@ private void DoHorizontal(Active horz)
       }
       ClearSolutionOnly();
       if (!success) return false;
-      if (oPaths.Count <= 0) return true;
-      openPaths.EnsureCapacity(oPaths.Count);
-      foreach (var path in oPaths)
-        openPaths.Add(path, intToFloatRatio);
+
+      if (solutionOpen.IsCreated)
+      {
+        solutionOpen.EnsureItemsCapacity(solutionOpenI.ItemsCount);
+        foreach (var path in solutionOpenI)
+          solutionOpen.Add(path, intToFloatRatio);
+      }
 
       return true;
     }
 
     public bool Execute(ClipType clipType, FillRule fillRule, PolyTreeD polytree)
     {
-      return Execute(clipType, fillRule, polytree, new PathsF());
+      return Execute(clipType, fillRule, polytree, default);
     }
   } // ClipperD class
 

@@ -43,19 +43,15 @@ namespace Clipper.Tests
         if (storedCount > 0)
         {
           if (IsInList(testNum, new int[] { 140, 150, 165, 166, 172, 173, 176, 177, 179 }))
-          {
-            Assert.IsTrue(countDiff <= 9);
-          }
+            Assert.LessOrEqual(countDiff, 9, "Test #{0}", testNum);
           else if (testNum >= 120)
-          {
-            Assert.IsTrue(countDiff <= 6);
-          }
+            Assert.LessOrEqual(countDiff, 6, "Test #{0}", testNum);
           else if (IsInList(testNum, new int[] { 27, 121, 126 }))
-            Assert.IsTrue(countDiff <= 2);
+            Assert.LessOrEqual(countDiff, 2, "Test #{0}", testNum);
           else if (IsInList(testNum, new int[] { 23, 37, 43, 45, 87, 102, 111, 118, 119 }))
-            Assert.IsTrue(countDiff <= 1);
+            Assert.LessOrEqual(countDiff, 1, "Test #{0}", testNum);
           else
-            Assert.IsTrue(countDiff == 0);
+            Assert.AreEqual(countDiff, 0, "Test #{0}", testNum);
         }
 
         // check polygon areas

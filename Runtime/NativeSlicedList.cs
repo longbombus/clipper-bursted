@@ -37,6 +37,8 @@ namespace Clipper
 		[Obsolete("Use SlicesCount property instead")]
 		public int Count => SlicesCount;
 
+		public bool IsCreated => items.IsCreated && slices.IsCreated;
+
 		public NativeSlicedList(Allocator allocator)
 		{
 			items = new NativeList<T>(allocator);
@@ -166,6 +168,7 @@ namespace Clipper
 		}
 
 		public NativeArray<T> AsArray() => items.AsArray();
+		public NativeList<T> AsList() => items;
 
 		public IEnumerator<NativeArray<T>> GetEnumerator()
 			=> new SlicesEnumerator(this);
