@@ -22,6 +22,9 @@ namespace Clipper
 		/// <summary> Number of items in all slices. </summary>
 		public int ItemsCount => items.Length;
 
+		/// <summary> Number of items in all slices. </summary>
+		public int ItemsCapacity => items.Capacity;
+
 		/// <summary> Number of slices. </summary>
 		public int SlicesCount
 		{

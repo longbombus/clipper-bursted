@@ -238,17 +238,21 @@ namespace Clipper
         list.Capacity = minCapacity;
     }
 
-    internal static void AddPathsToVertexList(NativeSlicedList<int2> paths, PathType polytype, bool isOpen, List<LocalMinima> minimaList, VertexPoolList vertexList)
+    internal static void AddPathsToVertexList<TPaths>(TPaths paths, PathType polytype, bool isOpen, List<LocalMinima> minimaList, VertexPoolList vertexList)
+      where TPaths : IEnumerable<NativeArray<int2>>
     {
-      vertexList.EnsureCapacity(vertexList.Count + paths.ItemsCount);
+      if (paths is NativeSlicedList<int2> slicedPaths)
+        vertexList.EnsureCapacity(vertexList.Count + slicedPaths.ItemsCount);
 
       foreach (var path in paths)
         AddPathToVertexList(path, polytype, isOpen, minimaList, vertexList);
     }
 
-    internal static void AddPathsToVertexList(NativeSlicedList<float2> paths, float scale, PathType polytype, bool isOpen, List<LocalMinima> minimaList, VertexPoolList vertexList)
+    internal static void AddPathsToVertexList<TPaths>(TPaths paths, float scale, PathType polytype, bool isOpen, List<LocalMinima> minimaList, VertexPoolList vertexList)
+      where TPaths : IEnumerable<NativeArray<float2>>
     {
-      vertexList.EnsureCapacity(vertexList.Count + paths.ItemsCount);
+      if (paths is NativeSlicedList<float2> slicedPaths)
+        vertexList.EnsureCapacity(vertexList.Count + slicedPaths.ItemsCount);
 
       foreach (var path in paths)
         AddPathToVertexList(path, scale, polytype, isOpen, minimaList, vertexList);
@@ -404,7 +408,7 @@ namespace Clipper
     }
   }
 
-  public class ClipperBase
+  public class ClipperBase : IDisposable
   {
     private ClipType _cliptype;
     private FillRule _fillrule;
@@ -784,6 +788,11 @@ namespace Clipper
       _hasOpenPaths = false;
     }
 
+    public void Dispose()
+    {
+      Clear();
+    }
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void Reset()
     {
@@ -883,7 +892,8 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddPaths(NativeSlicedList<int2> paths, PathType polytype, bool isOpen = false)
+    public void AddPaths<TPaths>(TPaths paths, PathType polytype, bool isOpen = false)
+      where TPaths : IEnumerable<NativeArray<int2>>
     {
       if (isOpen) _hasOpenPaths = true;
       _isSortedMinimaList = false;
@@ -891,7 +901,8 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddPaths(NativeSlicedList<float2> paths, float scale, PathType polytype, bool isOpen = false)
+    public void AddPaths<TPaths>(TPaths paths, float scale, PathType polytype, bool isOpen = false)
+      where TPaths : IEnumerable<NativeArray<float2>>
     {
       if (isOpen) _hasOpenPaths = true;
       _isSortedMinimaList = false;
@@ -3225,7 +3236,8 @@ private void DoHorizontal(Active horz)
       => base.AddPath(path, floatToIntRatio, polytype, isOpen);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public void AddPaths(NativeSlicedList<float2> paths, PathType polytype, bool isOpen = false)
+    public new void AddPaths<TPaths>(TPaths paths, PathType polytype, bool isOpen = false)
+      where TPaths : IEnumerable<NativeArray<float2>>
       => base.AddPaths(paths, floatToIntRatio, polytype, isOpen);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

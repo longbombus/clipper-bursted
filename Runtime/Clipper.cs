@@ -22,110 +22,57 @@ namespace Clipper
 {
   public static class Clipper
   {
-    public static PathsI Intersect(PathsI subject, PathsI clip, FillRule fillRule)
+    public static void BooleanOp<TPaths>(ClipType clipType, FillRule fillRule, TPaths subject, TPaths clip, NativeSlicedList<int2> solution)
+      where TPaths : IEnumerable<NativeArray<int2>>
     {
-      return BooleanOp(ClipType.Intersection, subject, clip, fillRule);
-    }
-
-    public static PathsF Intersect(PathsF subject, PathsF clip,
-      FillRule fillRule, int precision = 2)
-    {
-      return BooleanOp(ClipType.Intersection,
-        subject, clip, fillRule, precision);
-    }
-
-    public static PathsI Union(PathsI subject, FillRule fillRule)
-    {
-      return BooleanOp(ClipType.Union, subject, null, fillRule);
-    }
-
-    public static PathsI Union(PathsI subject, PathsI clip, FillRule fillRule)
-    {
-      return BooleanOp(ClipType.Union, subject, clip, fillRule);
-    }
-
-    public static PathsF Union(PathsF subject, FillRule fillRule)
-    {
-      return BooleanOp(ClipType.Union, subject, null, fillRule);
-    }
-
-    public static PathsF Union(PathsF subject, PathsF clip,
-      FillRule fillRule, int precision = 2)
-    {
-      return BooleanOp(ClipType.Union,
-        subject, clip, fillRule, precision);
-    }
-
-    public static PathsI Difference(PathsI subject, PathsI clip, FillRule fillRule)
-    {
-      return BooleanOp(ClipType.Difference, subject, clip, fillRule);
-    }
-
-    public static PathsF Difference(PathsF subject, PathsF clip,
-      FillRule fillRule, int precision = 2)
-    {
-      return BooleanOp(ClipType.Difference,
-        subject, clip, fillRule, precision);
-    }
-
-    public static PathsI Xor(PathsI subject, PathsI clip, FillRule fillRule)
-    {
-      return BooleanOp(ClipType.Xor, subject, clip, fillRule);
-    }
-
-    public static PathsF Xor(PathsF subject, PathsF clip,
-      FillRule fillRule, int precision = 2)
-    {
-      return BooleanOp(ClipType.Xor,
-        subject, clip, fillRule, precision);
-    }
-
-    public static PathsI BooleanOp(ClipType clipType,
-      PathsI? subject, PathsI? clip, FillRule fillRule)
-    {
-      PathsI solution = new PathsI();
-      if (subject == null) return solution;
-      ClipperI c = new ClipperI();
+      using var c = new ClipperI();
       c.AddPaths(subject, PathType.Subject);
-      if (clip != null)
-        c.AddPaths(clip, PathType.Clip);
+      c.AddPaths(clip, PathType.Clip);
       c.Execute(clipType, fillRule, solution);
-      return solution;
     }
 
-    public static void BooleanOp(ClipType clipType,
-      PathsI? subject, PathsI? clip,
-      PolyTree64 polytree, FillRule fillRule)
+    public static void BooleanOp<TPaths>(ClipType clipType, FillRule fillRule, TPaths subject, TPaths clip, PolyTree64 polytree)
+      where TPaths : IEnumerable<NativeArray<int2>>
     {
-      if (subject == null) return;
-      ClipperI c = new ClipperI();
+      using var c = new ClipperI();
       c.AddPaths(subject, PathType.Subject);
-      if (clip != null)
-        c.AddPaths(clip, PathType.Clip);
+      c.AddPaths(clip, PathType.Clip);
       c.Execute(clipType, fillRule, polytree);
     }
 
-    public static PathsF BooleanOp(ClipType clipType, PathsF subject, PathsF? clip,
-      FillRule fillRule, int precision = 2)
+    public static void BooleanOp<TPaths>(ClipType clipType, FillRule fillRule, TPaths subject, TPaths clip, NativeSlicedList<float2> solution, int decimalOrderPrecision = -2)
+      where TPaths : IEnumerable<NativeArray<float2>>
     {
-      PathsF solution = new PathsF();
-      ClipperF c = new ClipperF(precision);
-      c.AddSubject(subject);
-      if (clip != null)
-        c.AddClip(clip);
+      using var c = new ClipperF(decimalOrderPrecision);
+      c.AddPaths(subject, PathType.Subject);
+      c.AddPaths(clip, PathType.Clip);
       c.Execute(clipType, fillRule, solution);
-      return solution;
     }
 
-    public static void BooleanOp(ClipType clipType,
-      PathsF? subject, PathsF? clip,
-      PolyTreeD polytree, FillRule fillRule, int precision = 2)
+    public static void BooleanOp<TPaths>(ClipType clipType, FillRule fillRule, TPaths subject, TPaths clip, NativeSlicedList<float2> solution, float precision)
+      where TPaths : IEnumerable<NativeArray<float2>>
     {
-      if (subject == null) return;
-      ClipperF c = new ClipperF(precision);
+      using var c = new ClipperF(precision);
       c.AddPaths(subject, PathType.Subject);
-      if (clip != null)
-        c.AddPaths(clip, PathType.Clip);
+      c.AddPaths(clip, PathType.Clip);
+      c.Execute(clipType, fillRule, solution);
+    }
+
+    public static void BooleanOp<TPaths>(ClipType clipType, FillRule fillRule, TPaths subject, TPaths clip, PolyTreeD polytree, int decimalOrderPrecision = -2)
+      where TPaths : IEnumerable<NativeArray<float2>>
+    {
+      using var c = new ClipperF(decimalOrderPrecision);
+      c.AddPaths(subject, PathType.Subject);
+      c.AddPaths(clip, PathType.Clip);
+      c.Execute(clipType, fillRule, polytree);
+    }
+
+    public static void BooleanOp<TPaths>(ClipType clipType, FillRule fillRule, TPaths subject, TPaths clip, PolyTreeD polytree, float precision)
+      where TPaths : IEnumerable<NativeArray<float2>>
+    {
+      using var c = new ClipperF(precision);
+      c.AddPaths(subject, PathType.Subject);
+      c.AddPaths(clip, PathType.Clip);
       c.Execute(clipType, fillRule, polytree);
     }
 
@@ -225,25 +172,6 @@ namespace Clipper
       PathsF tmp = new PathsF { path };
       return RectClipLines(rect, tmp, precision);
     }
-    public static PathsI MinkowskiSum(PathI pattern, PathI path, bool isClosed)
-    {
-      return Minkowski.Sum(pattern, path, isClosed);
-    }
-
-    public static PathsF MinkowskiSum(PathF pattern, PathF path, bool isClosed)
-    {
-      return Minkowski.Sum(pattern, path, isClosed);
-    }
-
-    public static PathsI MinkowskiDiff(PathI pattern, PathI path, bool isClosed)
-    {
-      return Minkowski.Diff(pattern, path, isClosed);
-    }
-
-    public static PathsF MinkowskiDiff(PathF pattern, PathF path, bool isClosed)
-    {
-      return Minkowski.Diff(pattern, path, isClosed);
-    }
 
     public static float Area(NativeArray<int2> path)
     {
@@ -293,13 +221,13 @@ namespace Clipper
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsPositive(PathI poly)
+    public static bool IsPositive(NativeArray<int2> poly)
     {
       return Area(poly) >= 0;
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsPositive(PathF poly)
+    public static bool IsPositive(NativeArray<float2> poly)
     {
       return Area(poly) >= 0;
     }
@@ -317,12 +245,12 @@ namespace Clipper
       => (int4)(rec * scale);
 
     // Unlike ScalePath, both ScalePath64 & ScalePathD also involve type conversion
-    public static PathI ScalePath64(PathF path, float scale)
+    public static NativeArray<int2> ScalePath64(NativeArray<float2> path, float scale, Allocator allocator)
     {
-      int cnt = path.Count;
-      PathI res = new PathI(cnt);
-      res.AddRange(path, scale);
-      return res;
+      var dst = new NativeArray<int2>(path.Length, allocator, NativeArrayOptions.UninitializedMemory);
+      for (int i = 0; i < path.Length; ++i)
+        dst[i] = (int2)(path[i] * scale);
+      return dst;
     }
 
     public static PathsI ScalePaths64(PathsF paths, float scale)
@@ -842,14 +770,6 @@ namespace Clipper
       return result;
     }
 
-    public static PathF TrimCollinear(PathF path, int precision, bool isOpen = false)
-    {
-      float scale = InternalClipper.PrecisionToScale(precision);
-      PathI p = ScalePath64(path, scale);
-      p = TrimCollinear(p, isOpen);
-      return ScalePathD(p, 1 / scale);
-    }
-
     public static PointInPolygonResult PointInPolygon(int2 pt, NativeArray<int2> polygon)
     {
       return InternalClipper.PointInPolygon(pt, polygon);
@@ -860,7 +780,7 @@ namespace Clipper
     {
       float scale = InternalClipper.PrecisionToScale(precision);
       int2 p = (int2)(pt * scale);
-      PathI path = ScalePath64(polygon, scale);
+      using var path = ScalePath64(polygon, scale, Allocator.Temp);
       return InternalClipper.PointInPolygon(p, path);
     }
 
