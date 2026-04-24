@@ -614,7 +614,8 @@ namespace Clipper
             if (group.endType == EndType.Round)
             {
               int steps = (int) Math.Ceiling(_stepsPerRad * 2 * Math.PI);
-              pathOut = Clipper.Ellipse(pt, (int2)absDelta, steps);
+              pathOut.Resize(steps, NativeArrayOptions.UninitializedMemory);
+              EllipsePath.Fill(pt, (int2)absDelta, pathOut.AsArray());
             }
             else
             {

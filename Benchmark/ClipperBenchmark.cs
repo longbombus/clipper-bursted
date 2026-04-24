@@ -28,7 +28,7 @@ namespace Clipper.Benchmark
 				circleOffset = circleOffset * .5f + .5f;
 				circleRadius = circleRadius * .4f + .5f;
 
-				var circle = Clipper.Ellipse(d * circleOffset, circleRadius, circleSegmentsCount);
+				using var circle = EllipsePath.CreateArray(d * circleOffset, circleRadius, circleSegmentsCount);
 
 				var pathType = (i & 1) == 0 ? PathType.Subject : PathType.Clip;
 				clipper.AddPath(circle, pathType);

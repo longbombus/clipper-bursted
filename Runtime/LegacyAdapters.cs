@@ -48,7 +48,9 @@ namespace Clipper
 		public void RemoveAt(int index) => list.RemoveAt(index);
 		public void Clear() => list.Clear();
 		public void EnsureCapacity(int capacity) => list.EnsureCapacity(capacity);
+		public void Resize(int size, NativeArrayOptions options) => list.Resize(size, options);
 		public void Reverse() => list.AsArray().Reverse();
+		public NativeArray<T> AsArray() => list.AsArray();
 
 		IEnumerator<T> IEnumerable<T>.GetEnumerator() => list.GetEnumerator();
 		IEnumerator IEnumerable.GetEnumerator() => list.GetEnumerator();
