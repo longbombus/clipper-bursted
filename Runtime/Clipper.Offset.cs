@@ -615,7 +615,7 @@ namespace Clipper
             {
               int steps = (int) Math.Ceiling(_stepsPerRad * 2 * Math.PI);
               pathOut.Resize(steps, NativeArrayOptions.UninitializedMemory);
-              EllipsePath.Fill(pt, (int2)absDelta, pathOut.AsArray());
+              PathUtility.FillEllipse(pt, (int2)absDelta, pathOut.AsArray());
             }
             else
             {
