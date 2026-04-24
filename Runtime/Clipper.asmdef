@@ -1,6 +1,6 @@
 {
     "name": "Clipper",
-    "rootNamespace": "Clipper2Lib",
+    "rootNamespace": "Clipper",
     "references": [
         "Unity.Burst",
         "Unity.Collections",
