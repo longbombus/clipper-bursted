@@ -11,7 +11,7 @@ namespace Clipper
 	{
     [BurstCompile]
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static void Centrize(NativeArray<float2> path, out float2 oldCenter)
+    public static void Centrize(ref NativeArray<float2> path, out float2 oldCenter)
     {
       if (path.Length == 0)
       {

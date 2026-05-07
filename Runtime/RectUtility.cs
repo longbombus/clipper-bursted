@@ -13,7 +13,7 @@ namespace Clipper
 
 		[BurstCompile]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void GetBounds(this NativeArray<int2> path, out int4 bounds)
+		public static void GetBounds(this in NativeArray<int2> path, out int4 bounds)
 		{
 			bounds = InvalidI;
 			foreach (int2 pt in path)
@@ -25,14 +25,13 @@ namespace Clipper
 			}
 		}
 
-		[BurstCompile]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void GetBounds(this NativeSlicedList<int2> paths, out int4 bounds)
 			=> paths.AsArray().GetBounds(out bounds);
 
 		[BurstCompile]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void GetBounds(this NativeSlice<int2> path, out int4 bounds)
+		public static void GetBounds(this in NativeSlice<int2> path, out int4 bounds)
 		{
 			bounds = InvalidI;
 			foreach (int2 pt in path)
@@ -46,7 +45,7 @@ namespace Clipper
 
 		[BurstCompile]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static void GetBounds(this NativeArray<float2> path, out float4 bounds)
+		public static void GetBounds(this in NativeArray<float2> path, out float4 bounds)
 		{
 			bounds = InvalidF;
 			foreach (float2 pt in path)
@@ -58,7 +57,6 @@ namespace Clipper
 			}
 		}
 
-		[BurstCompile]
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static void GetBounds(this NativeSlicedList<float2> paths, float4 bounds)
 			=> paths.AsArray().GetBounds(out bounds);
